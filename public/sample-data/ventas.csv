@@ -1,0 +1,42 @@
+fecha,cliente,ciudad,categoria,producto,unidades,monto
+2026-06-03,Constructora Lumen,Monterrey,Materiales,Cemento,120,18000
+2026-06-05,Grupo Aranda,CDMX,Electronica,Router WiFi,15,9750
+2026-06-10,Ferreteria del Norte,Monterrey,Materiales,Varilla,80,14400
+2026-06-14,Tecno Solutions,Guadalajara,Electronica,Laptop,6,72000
+2026-06-18,Constructora Lumen,Monterrey,Materiales,Pintura,40,6800
+2026-06-21,Distribuidora Vela,Puebla,Alimentos,Aceite,200,9000
+2026-06-25,Grupo Aranda,CDMX,Electronica,Monitor,10,15000
+2026-06-28,Comercial Rios,Queretaro,Alimentos,Harina,150,6750
+2026-07-02,Tecno Solutions,Guadalajara,Electronica,Teclado,25,6250
+2026-07-05,Constructora Lumen,Monterrey,Materiales,Cemento,100,15000
+2026-07-08,Ferreteria del Norte,Monterrey,Materiales,Tubo PVC,60,7200
+2026-07-11,Distribuidora Vela,Puebla,Alimentos,Azucar,180,7920
+2026-07-15,Grupo Aranda,CDMX,Electronica,Router WiFi,20,13000
+2026-07-18,Comercial Rios,Queretaro,Alimentos,Arroz,140,8400
+2026-07-22,Tecno Solutions,Guadalajara,Electronica,Laptop,4,48000
+2026-07-26,Constructora Lumen,Monterrey,Materiales,Varilla,90,16200
+2026-07-29,Distribuidora Vela,Puebla,Alimentos,Aceite,220,9900
+2026-08-01,Grupo Aranda,CDMX,Electronica,Laptop,8,96000
+2026-08-03,Constructora Lumen,Monterrey,Materiales,Cemento,150,22500
+2026-08-04,Ferreteria del Norte,Monterrey,Materiales,Pintura,50,8500
+2026-08-06,Tecno Solutions,Guadalajara,Electronica,Monitor,18,27000
+2026-08-08,Distribuidora Vela,Puebla,Alimentos,Harina,170,7650
+2026-08-10,Comercial Rios,Queretaro,Alimentos,Azucar,160,7040
+2026-08-12,Grupo Aranda,CDMX,Electronica,Router WiFi,30,19500
+2026-08-14,Constructora Lumen,Monterrey,Materiales,Varilla,110,19800
+2026-08-16,Tecno Solutions,Guadalajara,Electronica,Teclado,35,8750
+2026-08-18,Ferreteria del Norte,Monterrey,Materiales,Tubo PVC,70,8400
+2026-08-20,Distribuidora Vela,Puebla,Alimentos,Aceite,210,9450
+2026-08-22,Grupo Aranda,CDMX,Electronica,Laptop,5,60000
+2026-08-24,Comercial Rios,Queretaro,Alimentos,Arroz,130,7800
+2026-08-26,Constructora Lumen,Monterrey,Materiales,Cemento,140,21000
+2026-08-28,Tecno Solutions,Guadalajara,Electronica,Monitor,12,18000
+2026-08-30,Distribuidora Vela,Puebla,Alimentos,Azucar,190,8360
+2026-09-02,Grupo Aranda,CDMX,Electronica,Router WiFi,22,14300
+2026-09-05,Constructora Lumen,Monterrey,Materiales,Varilla,95,17100
+2026-09-08,Ferreteria del Norte,Monterrey,Materiales,Pintura,45,7650
+2026-09-11,Comercial Rios,Queretaro,Alimentos,Harina,155,6975
+2026-09-14,Tecno Solutions,Guadalajara,Electronica,Laptop,7,84000
+2026-09-17,Distribuidora Vela,Puebla,Alimentos,Aceite,195,8775
+2026-09-20,Grupo Aranda,CDMX,Electronica,Teclado,28,7000
+2026-09-23,Constructora Lumen,Monterrey,Materiales,Cemento,130,19500
