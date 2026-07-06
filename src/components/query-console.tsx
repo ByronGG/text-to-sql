@@ -1,6 +1,8 @@
 "use client";
 
 import { useState } from "react";
+import { AlertCircleIcon, ChevronDownIcon, ChevronRightIcon } from "lucide-react";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
@@ -12,7 +14,9 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
+import { Skeleton } from "@/components/ui/skeleton";
 import { QueryResults } from "@/components/query-results";
+import { SqlCodeBlock } from "@/components/sql-code-block";
 import { askQuestion } from "@/lib/ask-question";
 import type { TableSchema } from "@/lib/csv-table";
 import { runQuery, type QueryResult } from "@/lib/run-query";
@@ -39,7 +43,9 @@ const MAX_RETRIES = 2;
 export function QueryConsole({ schema }: QueryConsoleProps) {
   const [question, setQuestion] = useState("");
   const [status, setStatus] = useState<Status>("idle");
+  const [retryAttempt, setRetryAttempt] = useState(0);
   const [answer, setAnswer] = useState<Answer | null>(null);
+  const [showSql, setShowSql] = useState(false);
   const [clarification, setClarification] = useState<Clarification | null>(null);
   const [clarificationAnswer, setClarificationAnswer] = useState("");
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -49,6 +55,8 @@ export function QueryConsole({ schema }: QueryConsoleProps) {
     failedSql: { sql: string; error: string } | undefined,
     attempt: number,
   ) {
+    setRetryAttempt(attempt);
+
     let response;
     try {
       response = await askQuestion({ question: forQuestion, schema, failedSql });
@@ -67,6 +75,7 @@ export function QueryConsole({ schema }: QueryConsoleProps) {
     try {
       const result = await runQuery(response.consulta);
       setAnswer({ interpretation: response.interpretacion, sql: response.consulta, result });
+      setShowSql(false);
       setStatus("result");
     } catch (err) {
       const message = err instanceof Error ? err.message : "Error desconocido.";
@@ -97,8 +106,13 @@ export function QueryConsole({ schema }: QueryConsoleProps) {
     setStatus("loading");
     setClarification(null);
     setClarificationAnswer("");
+    // Reflect the resolved question back in the input, so it doesn't stay
+    // stuck showing the original (possibly vague) text the user first typed.
+    setQuestion(clarificationAnswer);
     await runAttempts(combinedQuestion, undefined, 0);
   }
+
+  const isLoading = status === "loading";
 
   return (
     <Card>
@@ -114,25 +128,48 @@ export function QueryConsole({ schema }: QueryConsoleProps) {
             onKeyDown={(e) => {
               if (e.key === "Enter") void handleAsk();
             }}
-            disabled={status === "loading"}
+            disabled={isLoading}
           />
-          <Button
-            type="button"
-            onClick={() => void handleAsk()}
-            disabled={status === "loading" || !question.trim()}
-          >
-            {status === "loading" ? "Pensando…" : "Preguntar"}
+          <Button type="button" onClick={() => void handleAsk()} disabled={isLoading || !question.trim()}>
+            {isLoading ? "Pensando…" : "Preguntar"}
           </Button>
         </div>
 
-        {errorMessage && <p className="text-sm text-destructive">{errorMessage}</p>}
+        {isLoading && (
+          <div className="space-y-2">
+            <p className="text-xs text-muted-foreground">
+              {retryAttempt === 0
+                ? "Generando la consulta…"
+                : `Corrigiendo la consulta (intento ${retryAttempt + 1} de ${MAX_RETRIES + 1})…`}
+            </p>
+            <Skeleton className="h-4 w-3/4" />
+            <Skeleton className="h-4 w-1/2" />
+            <Skeleton className="h-24 w-full" />
+          </div>
+        )}
+
+        {errorMessage && (
+          <Alert variant="destructive">
+            <AlertCircleIcon />
+            <AlertTitle>No se pudo completar la consulta</AlertTitle>
+            <AlertDescription>{errorMessage}</AlertDescription>
+          </Alert>
+        )}
 
         {answer && (
           <div className="space-y-3">
             <p className="text-sm">{answer.interpretation}</p>
-            <pre className="overflow-x-auto rounded-md border bg-muted/50 p-3 font-mono text-xs">
-              {answer.sql}
-            </pre>
+
+            <button
+              type="button"
+              onClick={() => setShowSql((v) => !v)}
+              className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground"
+            >
+              {showSql ? <ChevronDownIcon className="size-3.5" /> : <ChevronRightIcon className="size-3.5" />}
+              {showSql ? "Ocultar SQL" : "Ver SQL generado"}
+            </button>
+            {showSql && <SqlCodeBlock sql={answer.sql} />}
+
             <QueryResults result={answer.result} fileNameBase="resultados" />
           </div>
         )}

@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { LlmResponseSchema, SqlRequestSchema } from "@/lib/llm-schema";
+import { checkRateLimit } from "@/lib/rate-limit";
 import { buildMessages } from "@/lib/sql-prompt";
 
 const GROQ_URL = "https://api.groq.com/openai/v1/chat/completions";
@@ -12,6 +13,18 @@ function extractJson(content: string): unknown {
 }
 
 export async function POST(request: Request) {
+  const ip = request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? "unknown";
+  const rate = checkRateLimit(ip);
+  if (!rate.allowed) {
+    return NextResponse.json(
+      { error: "Demasiadas solicitudes. Intenta de nuevo en unos minutos." },
+      {
+        status: 429,
+        headers: { "Retry-After": String(Math.ceil((rate.resetAt - Date.now()) / 1000)) },
+      },
+    );
+  }
+
   const apiKey = process.env.GROQ_API_KEY;
   if (!apiKey) {
     return NextResponse.json(
