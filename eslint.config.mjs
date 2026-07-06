@@ -12,6 +12,8 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // Vendored DuckDB-WASM workers copied from the package dist (third-party, minified):
+    "public/duckdb/**",
   ]),
 ]);
 

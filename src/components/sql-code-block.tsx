@@ -9,14 +9,16 @@ interface SqlCodeBlockProps {
 }
 
 export function SqlCodeBlock({ sql }: SqlCodeBlockProps) {
-  const [html, setHtml] = useState<string | null>(null);
+  // Rendered HTML is stored together with the SQL it was generated from, so
+  // staleness is derived instead of reset via setState inside the effect.
+  const [rendered, setRendered] = useState<{ sql: string; html: string } | null>(null);
   const displaySql = formatSqlForDisplay(sql);
+  const html = rendered?.sql === displaySql ? rendered.html : null;
 
   useEffect(() => {
     let cancelled = false;
-    setHtml(null);
     codeToHtml(displaySql, { lang: "sql", theme: "github-dark" }).then((result) => {
-      if (!cancelled) setHtml(result);
+      if (!cancelled) setRendered({ sql: displaySql, html: result });
     });
     return () => {
       cancelled = true;
