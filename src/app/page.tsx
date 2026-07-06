@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { CsvUpload } from "@/components/csv-upload";
 import { SchemaPreview } from "@/components/schema-preview";
+import { SqlRunner } from "@/components/sql-runner";
 import type { TableSchema } from "@/lib/csv-table";
 
 export default function Home() {
@@ -25,6 +26,7 @@ export default function Home() {
         />
 
         {loaded && <SchemaPreview schema={loaded.schema} fileName={loaded.fileName} />}
+        {loaded && <SqlRunner />}
       </main>
     </div>
   );
