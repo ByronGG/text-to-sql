@@ -3,14 +3,7 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
+import { QueryResults } from "@/components/query-results";
 import { runQuery, type QueryResult } from "@/lib/run-query";
 
 const DEFAULT_SQL =
@@ -38,7 +31,7 @@ export function SqlRunner() {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Consola SQL (temporal · paso 1)</CardTitle>
+        <CardTitle>Consola SQL (temporal · paso 1-2)</CardTitle>
       </CardHeader>
       <CardContent className="space-y-3">
         <textarea
@@ -53,35 +46,7 @@ export function SqlRunner() {
 
         {error && <p className="text-sm text-destructive">{error}</p>}
 
-        {result && (
-          <div className="overflow-x-auto rounded-md border">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  {result.columns.map((column) => (
-                    <TableHead key={column.name}>{column.name}</TableHead>
-                  ))}
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {result.rows.map((row, i) => (
-                  <TableRow key={i}>
-                    {result.columns.map((column) => (
-                      <TableCell key={column.name}>
-                        {String(row[column.name] ?? "")}
-                      </TableCell>
-                    ))}
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </div>
-        )}
-        {result?.truncated && (
-          <p className="text-xs text-muted-foreground">
-            Mostrando los primeros {result.rowCount} resultados.
-          </p>
-        )}
+        {result && <QueryResults result={result} fileNameBase="consulta" />}
       </CardContent>
     </Card>
   );
