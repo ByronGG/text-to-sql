@@ -37,7 +37,7 @@ export function SchemaPreview({ schema, fileName }: SchemaPreviewProps) {
             {schema.columns.map((column) => (
               <Badge key={column.name} variant="secondary" className="gap-1.5 font-normal">
                 <span className="font-medium">{column.name}</span>
-                <span className="text-muted-foreground">{column.type}</span>
+                <span className="font-mono text-[0.7rem] text-muted-foreground">{column.type}</span>
                 {column.categoricalValues && (
                   <span className="text-muted-foreground">
                     · {column.categoricalValues.length} valores
@@ -63,7 +63,7 @@ export function SchemaPreview({ schema, fileName }: SchemaPreviewProps) {
                 {schema.sampleRows.map((row, i) => (
                   <TableRow key={i}>
                     {schema.columns.map((column) => (
-                      <TableCell key={column.name}>
+                      <TableCell key={column.name} className="font-mono text-xs">
                         {String(row[column.name] ?? "")}
                       </TableCell>
                     ))}

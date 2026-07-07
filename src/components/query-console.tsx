@@ -4,7 +4,7 @@ import { useState } from "react";
 import { AlertCircleIcon, ChevronDownIcon, ChevronRightIcon } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import {
   Dialog,
   DialogContent,
@@ -116,9 +116,6 @@ export function QueryConsole({ schema }: QueryConsoleProps) {
 
   return (
     <Card>
-      <CardHeader>
-        <CardTitle>Pregúntale a tus datos</CardTitle>
-      </CardHeader>
       <CardContent className="space-y-4">
         <div className="flex gap-2">
           <Input
@@ -157,7 +154,11 @@ export function QueryConsole({ schema }: QueryConsoleProps) {
         )}
 
         {answer && (
-          <div className="space-y-3">
+          <div
+            key={answer.sql}
+            className="motion-reduce:animate-none animate-in fade-in slide-in-from-bottom-2 space-y-3 duration-500"
+          >
+            <div className="reveal-rule h-px w-12 bg-primary" />
             <p className="text-sm">{answer.interpretation}</p>
 
             <button
