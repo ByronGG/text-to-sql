@@ -44,26 +44,19 @@ export function CsvUpload({ onLoaded }: CsvUploadProps) {
     try {
       const response = await fetch(SAMPLE_CSV_URL);
       const blob = await response.blob();
-      const file = new File([blob], SAMPLE_CSV_NAME, { type: "text/csv" });
-      const schema = await loadCsvAsTable(file);
-      onLoaded(schema, file.name);
-    } catch (err) {
-      setError(
-        err instanceof Error
-          ? `No se pudo cargar el ejemplo: ${err.message}`
-          : "No se pudo cargar el ejemplo.",
-      );
-    } finally {
+      await handleFile(new File([blob], SAMPLE_CSV_NAME, { type: "text/csv" }));
+    } catch {
+      setError("No se pudo cargar el ejemplo.");
       setIsLoading(false);
     }
-  }, [onLoaded]);
+  }, [handleFile]);
 
   return (
     <Card>
-      <CardContent className="pt-6">
+      <CardContent>
         <div
-          className={`flex flex-col items-center gap-3 rounded-lg border-2 border-dashed p-10 text-center transition-colors ${
-            isDragging ? "border-primary bg-muted/50" : "border-muted-foreground/25"
+          className={`flex flex-col items-center gap-3 rounded-lg border border-dashed p-10 text-center transition-colors ${
+            isDragging ? "border-primary bg-accent/40" : "border-border"
           }`}
           onDragOver={(e) => {
             e.preventDefault();
@@ -78,22 +71,13 @@ export function CsvUpload({ onLoaded }: CsvUploadProps) {
           }}
         >
           <p className="text-sm text-muted-foreground">
-            Arrastra tu archivo CSV aquí, o
+            {isDragging ? "Suelta tu CSV aquí" : "Arrastra tu archivo CSV aquí, o"}
           </p>
           <div className="flex flex-wrap justify-center gap-2">
-            <Button
-              type="button"
-              disabled={isLoading}
-              onClick={() => inputRef.current?.click()}
-            >
+            <Button type="button" disabled={isLoading} onClick={() => inputRef.current?.click()}>
               {isLoading ? "Procesando…" : "Elegir archivo"}
             </Button>
-            <Button
-              type="button"
-              variant="secondary"
-              disabled={isLoading}
-              onClick={() => void handleSample()}
-            >
+            <Button type="button" variant="secondary" disabled={isLoading} onClick={() => void handleSample()}>
               Usar datos de ejemplo
             </Button>
           </div>

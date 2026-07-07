@@ -1,11 +1,6 @@
+import { RotateCcw } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Table,
   TableBody,
@@ -19,16 +14,26 @@ import type { TableSchema } from "@/lib/csv-table";
 interface SchemaPreviewProps {
   schema: TableSchema;
   fileName: string;
+  onReset: () => void;
 }
 
-export function SchemaPreview({ schema, fileName }: SchemaPreviewProps) {
+export function SchemaPreview({ schema, fileName, onReset }: SchemaPreviewProps) {
   return (
     <Card>
-      <CardHeader>
-        <CardTitle>{fileName}</CardTitle>
-        <CardDescription>
-          {schema.rowCount.toLocaleString("es-MX")} filas · {schema.columns.length} columnas
-        </CardDescription>
+      <CardHeader className="flex-row items-start justify-between gap-3">
+        <div className="space-y-1">
+          <CardTitle>{fileName}</CardTitle>
+          <p className="text-sm text-muted-foreground">
+            {schema.rowCount.toLocaleString("es-MX")} filas · {schema.columns.length} columnas
+          </p>
+        </div>
+        <button
+          type="button"
+          onClick={onReset}
+          className="inline-flex shrink-0 items-center gap-1 text-xs text-muted-foreground transition-colors hover:text-foreground"
+        >
+          <RotateCcw className="size-3" /> Cambiar archivo
+        </button>
       </CardHeader>
       <CardContent className="space-y-6">
         <div>

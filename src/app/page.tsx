@@ -2,8 +2,9 @@
 
 import { useState } from "react";
 import { CsvUpload } from "@/components/csv-upload";
-import { SchemaPreview } from "@/components/schema-preview";
+import { Disclaimer } from "@/components/disclaimer";
 import { QueryConsole } from "@/components/query-console";
+import { SchemaPreview } from "@/components/schema-preview";
 import { Section } from "@/components/section";
 import type { TableSchema } from "@/lib/csv-table";
 
@@ -23,18 +24,24 @@ export default function Home() {
             Pregúntale a tus datos
           </h1>
           <p className="mt-2 max-w-md text-muted-foreground">
-            Sube un CSV y escribe tu pregunta en lenguaje natural. Todo corre
-            en tu navegador — tus datos nunca salen de él.
+            Sube un CSV y escribe tu pregunta en lenguaje natural.
           </p>
           <div className="mt-8 h-px w-full bg-border" />
         </header>
 
-        <div className="mt-10 flex flex-col gap-10">
+        <div className="mt-8 flex flex-col gap-10">
+          <Disclaimer />
+
           <Section index="01" label="DATOS">
-            <div className="space-y-6">
+            {loaded ? (
+              <SchemaPreview
+                schema={loaded.schema}
+                fileName={loaded.fileName}
+                onReset={() => setLoaded(null)}
+              />
+            ) : (
               <CsvUpload onLoaded={(schema, fileName) => setLoaded({ schema, fileName })} />
-              {loaded && <SchemaPreview schema={loaded.schema} fileName={loaded.fileName} />}
-            </div>
+            )}
           </Section>
 
           {loaded && (

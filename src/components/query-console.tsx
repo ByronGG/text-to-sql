@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { AlertCircleIcon, ChevronDownIcon, ChevronRightIcon } from "lucide-react";
+import { AlertCircle, ChevronDown, ChevronRight } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -50,6 +50,8 @@ export function QueryConsole({ schema }: QueryConsoleProps) {
   const [clarificationAnswer, setClarificationAnswer] = useState("");
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
+  // Function declaration (not useCallback) so it can recurse by name for the
+  // auto-correction retries without tripping the React Compiler linter.
   async function runAttempts(
     forQuestion: string,
     failedSql: { sql: string; error: string } | undefined,
@@ -147,29 +149,28 @@ export function QueryConsole({ schema }: QueryConsoleProps) {
 
         {errorMessage && (
           <Alert variant="destructive">
-            <AlertCircleIcon />
+            <AlertCircle />
             <AlertTitle>No se pudo completar la consulta</AlertTitle>
             <AlertDescription>{errorMessage}</AlertDescription>
           </Alert>
         )}
 
         {answer && (
-          <div
-            key={answer.sql}
-            className="motion-reduce:animate-none animate-in fade-in slide-in-from-bottom-2 space-y-3 duration-500"
-          >
+          <div key={answer.sql} className="space-y-3">
             <div className="reveal-rule h-px w-12 bg-primary" />
             <p className="text-sm">{answer.interpretation}</p>
 
-            <button
-              type="button"
-              onClick={() => setShowSql((v) => !v)}
-              className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground"
-            >
-              {showSql ? <ChevronDownIcon className="size-3.5" /> : <ChevronRightIcon className="size-3.5" />}
-              {showSql ? "Ocultar SQL" : "Ver SQL generado"}
-            </button>
-            {showSql && <SqlCodeBlock sql={answer.sql} />}
+            <div>
+              <button
+                type="button"
+                onClick={() => setShowSql((v) => !v)}
+                className="inline-flex items-center gap-1 text-xs text-muted-foreground transition-colors hover:text-foreground"
+              >
+                {showSql ? <ChevronDown className="size-3.5" /> : <ChevronRight className="size-3.5" />}
+                {showSql ? "Ocultar SQL" : "Ver SQL generado"}
+              </button>
+              {showSql && <div className="mt-2"><SqlCodeBlock sql={answer.sql} /></div>}
+            </div>
 
             <QueryResults result={answer.result} fileNameBase="resultados" />
           </div>

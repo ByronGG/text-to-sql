@@ -5,8 +5,7 @@ interface SectionProps {
 }
 
 // Numbered eyebrows are justified here: the flow really is sequential (no
-// question without data loaded, no result without a question) — not
-// decoration layered onto unordered content.
+// question without data loaded) — not decoration layered onto unordered content.
 export function Section({ index, label, children }: SectionProps) {
   return (
     <section className="space-y-3">
