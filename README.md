@@ -1,7 +1,8 @@
-# Text-to-SQL
+# AskQL
 
-Sube un CSV, pregúntale en lenguaje natural, y obtén tus datos como los pediste:
-tabla, SQL generado a la vista y export a Excel/CSV listo para Power BI.
+**AskQL** (ask + SQL) — sube un CSV, pregúntale en lenguaje natural, y obtén tus
+datos como los pediste: tabla, SQL generado a la vista y export a Excel/CSV listo
+para Power BI.
 
 Proyecto de portafolio — no es un SaaS. El objetivo es mostrar un flujo completo
 de text-to-SQL con las decisiones de diseño que separan un demo real de un

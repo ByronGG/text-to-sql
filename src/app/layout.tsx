@@ -16,7 +16,7 @@ const plexMono = IBM_Plex_Mono({
   subsets: ["latin"],
 });
 
-const title = "Text-to-SQL — pregúntale a tus datos";
+const title = "AskQL — pregúntale a tus datos";
 const description =
   "Sube un CSV y haz preguntas en lenguaje natural. Todo corre en tu navegador con DuckDB-WASM; un LLM solo ve el esquema, nunca tus datos.";
 

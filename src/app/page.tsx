@@ -17,14 +17,16 @@ export default function Home() {
     <div className="min-h-screen bg-background">
       <main className="mx-auto flex w-full max-w-3xl flex-col px-6 pt-12 pb-24">
         <header>
-          <span className="font-mono text-xs tracking-[0.2em] text-muted-foreground uppercase">
-            Text-to-SQL
+          <span className="font-mono text-xs tracking-[0.2em] text-muted-foreground">
+            AskQL
           </span>
           <h1 className="mt-3 text-3xl font-medium tracking-tight text-foreground">
             Pregúntale a tus datos
           </h1>
-          <p className="mt-2 max-w-md text-muted-foreground">
-            Sube un CSV y escribe tu pregunta en lenguaje natural.
+          <p className="mt-2 max-w-lg text-muted-foreground">
+            Sube un CSV y pregunta en lenguaje natural. AskQL traduce tu pregunta
+            a SQL, la ejecuta sobre tus datos y te devuelve los resultados en una
+            tabla lista para exportar a Excel.
           </p>
           <div className="mt-8 h-px w-full bg-border" />
         </header>

@@ -1,4 +1,4 @@
-# Text-to-SQL — Plan del proyecto
+# AskQL — Plan del proyecto
 
 Web app de portafolio: el usuario sube un CSV, pregunta en lenguaje natural y recibe
 los datos como los pidió (tabla + export a Excel/Power BI).
