@@ -27,6 +27,11 @@ function formatCell(value: unknown, type: DataType): unknown {
     const iso = new Date(value).toISOString();
     return DataType.isTimestamp(type) ? iso : iso.slice(0, 10);
   }
+  // Aggregates over integers (e.g. SUM of BIGINT) come back as Arrow Decimals,
+  // whose values are DecimalBigNum objects, not JS numbers. Their toString()
+  // is scale-aware, so parse through it to get a number that matches what the
+  // table shows — and that downstream chart/type logic can treat as numeric.
+  if (value != null && DataType.isDecimal(type)) return Number(String(value));
   return value;
 }
 

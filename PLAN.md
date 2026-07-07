@@ -58,7 +58,9 @@ u OpenRouter (modelos `:free`).
 - [x] **Paso 3 · API route `/api/sql`** — prompt + Groq + Zod; respuesta `sql` o `aclaracion` (requiere `GROQ_API_KEY` en `.env.local`)
 - [x] **Paso 4 · Flujo de consulta en UI** — input NL → API → validar → ejecutar → resultados; ciclo de auto-corrección (máx. 2-3) y diálogo human-in-the-loop
 - [x] **Paso 5 · Presentación** — interpretación en texto, SQL expandible con shiki, estados de carga/error
-- [ ] **Paso 6 · Endurecimiento y deploy** — rate limit por IP, README de arquitectura, deploy a Vercel
+- [x] **Paso 6a · Endurecimiento** — rate limit por IP (429 + `Retry-After`), README de arquitectura, lint en 0 errores
+- [x] **Paso 6b · Identidad y diseño** — rediseño Suizo/terracota (Archivo + IBM Plex Mono), nombre **AskQL**, favicon, metadata OG, disclaimer de privacidad
+- [ ] **Paso 6c · Deploy a Vercel** — conectar el repo en vercel.com/new + env var `GROQ_API_KEY` (acción del dueño del repo)
 
 ## Flujo lógico — v1
 
@@ -100,15 +102,31 @@ u OpenRouter (modelos `:free`).
 
 ---
 
-## Trabajo futuro
+## Roadmap v2 — Experiencia
 
-### v2 — Experiencia
-- **Gráfica automática** según la forma del resultado (serie temporal → línea,
-  categorías → barras) con Recharts.
-- **Historial conversacional**: preguntas de seguimiento ("y ahora solo los de CDMX")
-  reutilizando el contexto.
-- Aceptar XLSX como archivo de entrada (además de CSV).
-- Compartir consulta por URL (esquema + pregunta codificados).
+Ordenado para que cada paso deje algo funcional y probable por sí solo.
+
+- [x] **Paso 1 · Gráfica automática** — heurística por valores (`chart-spec.ts`):
+  temporal + numérica → línea; categórica (≤25 filas) + numérica → barras; una fila
+  de solo números → tarjetas de métrica; otra forma → solo tabla. Toggle Gráfica/Tabla
+  (`result-chart.tsx`), gráfica por defecto. De paso: normalización de Decimals de
+  Arrow (SUM de BIGINT) a `number` en `run-query.ts`.
+- [x] **Paso 2 · Historial conversacional** — la consola guarda el hilo de turnos
+  (pregunta/SQL/interpretación/resultado), envía los últimos 6 como `history`, y
+  muestra la lista "CONVERSACIÓN" navegable (clic para ver ese resultado, botón
+  "Limpiar"). Prompt reforzado para tratar el contexto de seguimiento. De paso:
+  reemplazado `ResponsiveContainer` de Recharts por medición propia con
+  `ResizeObserver` (cacheaba ancho 0 al remontar entre turnos).
+- [x] **Paso 3 · XLSX como entrada** — SheetJS lee el Excel en el cliente
+  (`xlsx-input.ts`), convierte la hoja a CSV y entra al mismo pipeline de DuckDB.
+  Una hoja → carga directa; varias → selector de hoja en `csv-upload.tsx`. Copy
+  actualizado (acepta CSV o Excel).
+- [ ] **Paso 4 · Compartir consulta por URL** — codificar la pregunta en la URL;
+  al abrir el enlace con el dataset de ejemplo se auto-ejecuta. Con archivo propio
+  solo se precarga la pregunta y se pide volver a subir el archivo (los datos nunca
+  salen del navegador, no hay nada que "compartir" del lado del servidor).
+- [ ] **Paso 5 · Cierre v2** — README actualizado (gif del flujo con gráfica),
+  verificación responsive/accesibilidad, build + deploy.
 
 ### v3 — Alcance
 - **Múltiples archivos con JOINs** entre tablas (complica prompt y validación).
