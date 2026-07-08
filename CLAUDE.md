@@ -23,13 +23,13 @@ Data flow:
 1. `src/components/csv-upload.tsx` — drag/drop or file-picker (or a bundled sample from `public/sample-data/`), hands the `File` to `loadCsvAsTable`.
 2. `src/lib/csv-table.ts` — registers the file in DuckDB and derives a `TableSchema` (columns + SQL types, row count, sample rows, and distinct values for low-cardinality text columns). This is the object intended to become LLM context.
 3. `src/components/schema-preview.tsx` — renders the schema and sample rows.
-4. `src/app/page.tsx` — owns the loaded-schema state and wires the two components together.
+4. `src/app/page.tsx` — owns the list of loaded tables (add/remove) and wires the components together.
 
 ### Key invariants (don't break these)
 
 - **DuckDB is a single shared async instance.** `src/lib/duckdb.ts` (`getDuckDB()`) memoizes one `AsyncDuckDB` behind a promise. Always go through it; never instantiate DuckDB directly.
 - **DuckDB WASM assets are self-hosted** in `public/duckdb/` (copied from the `@duckdb/duckdb-wasm` dist) and referenced by absolute path in `MANUAL_BUNDLES`. There is no CDN fallback at runtime — if you bump the package, re-copy these files.
-- **User input never touches SQL string interpolation.** The uploaded file is registered under a fixed virtual name (`upload.csv`) and always loaded into a fixed table name (`datos`, exported as `TABLE_NAME`). Column names are double-quoted. Preserve this pattern when adding queries.
+- **User input never touches SQL string interpolation.** Each uploaded file loads into its own table whose name comes from `deriveTableName` (sanitized to a safe SQL identifier and deduped), registered under a virtual filename derived from that same name — the user's real filename never reaches SQL. Table and column names are double-quoted at every use site. Multiple tables can coexist for cross-table JOINs; `validateSelectOnly(sql, allowedTables)` additionally rejects reads from any table that isn't loaded. Preserve these patterns when adding queries.
 - **DATE/TIMESTAMP values arrive as epoch-ms numbers** (via Arrow), not `Date` objects. `serializeValue` in `csv-table.ts` formats them by keying off the column's SQL type, not the runtime type — follow that approach for any new value handling.
 
 ## Conventions

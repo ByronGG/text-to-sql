@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { ChevronDown, ChevronRight } from "lucide-react";
+import { ApiKeyDialog } from "@/components/api-key-dialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -83,9 +84,12 @@ export default function EvalPage() {
     <div className="min-h-screen bg-background">
       <main className="mx-auto flex w-full max-w-3xl flex-col px-6 pt-12 pb-24">
         <header>
-          <span className="font-mono text-xs tracking-[0.2em] text-muted-foreground">
-            AskQL · EVAL
-          </span>
+          <div className="flex items-center justify-between gap-4">
+            <span className="font-mono text-xs tracking-[0.2em] text-muted-foreground">
+              AskQL · EVAL
+            </span>
+            <ApiKeyDialog />
+          </div>
           <h1 className="mt-3 text-3xl font-medium tracking-tight text-foreground">
             Precisión de ejecución
           </h1>
@@ -94,7 +98,8 @@ export default function EvalPage() {
             una corre por el pipeline real (modelo → validación → DuckDB) y se compara el{" "}
             <em>resultado</em> con el esperado, no el texto del SQL. Un intento por caso
             (sin auto-corrección), así que consume {EVAL_CASES.length} de las 20
-            solicitudes del límite por ventana.
+            solicitudes del límite compartido por ventana —o ninguna si configuras tu
+            propia API key.
           </p>
           <div className="mt-8 h-px w-full bg-border" />
         </header>

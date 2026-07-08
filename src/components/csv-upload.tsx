@@ -4,11 +4,18 @@ import { useCallback, useRef, useState } from "react";
 import type { WorkBook } from "xlsx";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { loadCsvAsTable, loadSampleTable, type TableSchema } from "@/lib/csv-table";
+import {
+  deriveTableName,
+  loadCsvAsTable,
+  loadSampleTable,
+  type TableSchema,
+} from "@/lib/csv-table";
 import { isExcelFile, parseWorkbook, sheetToCsvFile, stripExtension } from "@/lib/xlsx-input";
 
 interface CsvUploadProps {
   onLoaded: (schema: TableSchema, fileName: string) => void;
+  /** Table names already loaded, so a new file gets a unique table name. */
+  existingTableNames?: string[];
 }
 
 interface SheetChoice {
@@ -18,7 +25,7 @@ interface SheetChoice {
   displayName: string;
 }
 
-export function CsvUpload({ onLoaded }: CsvUploadProps) {
+export function CsvUpload({ onLoaded, existingTableNames = [] }: CsvUploadProps) {
   const [isLoading, setIsLoading] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -30,7 +37,8 @@ export function CsvUpload({ onLoaded }: CsvUploadProps) {
       setIsLoading(true);
       setError(null);
       try {
-        const schema = await loadCsvAsTable(file);
+        const tableName = deriveTableName(displayName, existingTableNames);
+        const schema = await loadCsvAsTable(file, tableName);
         onLoaded(schema, displayName);
       } catch (err) {
         setError(
@@ -42,7 +50,7 @@ export function CsvUpload({ onLoaded }: CsvUploadProps) {
         setIsLoading(false);
       }
     },
-    [onLoaded],
+    [onLoaded, existingTableNames],
   );
 
   const loadSheet = useCallback(
@@ -107,14 +115,14 @@ export function CsvUpload({ onLoaded }: CsvUploadProps) {
     setSheetChoice(null);
     setIsLoading(true);
     try {
-      const { schema, fileName } = await loadSampleTable();
+      const { schema, fileName } = await loadSampleTable(existingTableNames);
       onLoaded(schema, fileName);
     } catch {
       setError("No se pudo cargar el ejemplo.");
     } finally {
       setIsLoading(false);
     }
-  }, [onLoaded]);
+  }, [onLoaded, existingTableNames]);
 
   return (
     <Card>
@@ -169,9 +177,11 @@ export function CsvUpload({ onLoaded }: CsvUploadProps) {
               <Button type="button" disabled={isLoading} onClick={() => inputRef.current?.click()}>
                 {isLoading ? "Procesando…" : "Elegir archivo"}
               </Button>
-              <Button type="button" variant="secondary" disabled={isLoading} onClick={() => void handleSample()}>
-                Usar datos de ejemplo
-              </Button>
+              {existingTableNames.length === 0 && (
+                <Button type="button" variant="secondary" disabled={isLoading} onClick={() => void handleSample()}>
+                  Usar datos de ejemplo
+                </Button>
+              )}
             </div>
             <input
               ref={inputRef}

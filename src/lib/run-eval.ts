@@ -94,7 +94,7 @@ function errorMessage(err: unknown): string {
 export async function runEvalCase(evalCase: EvalCase, schema: TableSchema): Promise<CaseOutcome> {
   let response;
   try {
-    response = await askQuestion({ question: evalCase.question, schema });
+    response = await askQuestion({ question: evalCase.question, tables: [schema] });
   } catch (err) {
     return { status: "error", detail: `La API falló: ${errorMessage(err)}` };
   }
@@ -119,7 +119,7 @@ export async function runEvalCase(evalCase: EvalCase, schema: TableSchema): Prom
 
   let result: QueryResult;
   try {
-    result = await runQuery(sql);
+    result = await runQuery(sql, [schema.tableName]);
   } catch (err) {
     return { status: "error", detail: `El SQL no se pudo ejecutar: ${errorMessage(err)}`, sql };
   }

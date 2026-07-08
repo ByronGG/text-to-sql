@@ -44,8 +44,8 @@ function formatCell(value: unknown, type: DataType): unknown {
  * in its worker after the promise rejects. Acceptable for a single-user,
  * browser-local demo; would need `send()` + `cancelSent()` for a real cancel.
  */
-export async function runQuery(sql: string): Promise<QueryResult> {
-  const validated = validateSelectOnly(sql);
+export async function runQuery(sql: string, allowedTables?: string[]): Promise<QueryResult> {
+  const validated = validateSelectOnly(sql, allowedTables);
   const limited = `SELECT * FROM (${validated}) AS _q LIMIT ${MAX_ROWS + 1}`;
 
   const db = await getDuckDB();

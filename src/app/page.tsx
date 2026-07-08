@@ -1,17 +1,26 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { ApiKeyDialog } from "@/components/api-key-dialog";
 import { CsvUpload } from "@/components/csv-upload";
 import { Disclaimer } from "@/components/disclaimer";
 import { QueryConsole } from "@/components/query-console";
 import { SchemaPreview } from "@/components/schema-preview";
 import { Section } from "@/components/section";
-import { loadSampleTable, SAMPLE_CSV_NAME, type TableSchema } from "@/lib/csv-table";
+import {
+  dropTable,
+  loadSampleTable,
+  SAMPLE_CSV_NAME,
+  type TableSchema,
+} from "@/lib/csv-table";
+
+interface LoadedTable {
+  schema: TableSchema;
+  fileName: string;
+}
 
 export default function Home() {
-  const [loaded, setLoaded] = useState<{ schema: TableSchema; fileName: string } | null>(
-    null,
-  );
+  const [tables, setTables] = useState<LoadedTable[]>([]);
   // From a shared link (`?q=...`, optionally `?sample=1`).
   const [sharedQuestion, setSharedQuestion] = useState<string | null>(null);
   const [autoRunShared, setAutoRunShared] = useState(false);
@@ -34,30 +43,45 @@ export default function Home() {
       setAutoRunShared(true);
       setLoadingSample(true);
       loadSampleTable()
-        .then(setLoaded)
+        .then((loaded) => setTables([loaded]))
         .catch(() => {}) // keep the prefill on failure
         .finally(() => setLoadingSample(false));
     }
   }, []);
   /* eslint-enable react-hooks/set-state-in-effect */
 
-  const isSample = loaded?.fileName === SAMPLE_CSV_NAME;
-  const showSharedNotice = !loaded && !loadingSample && sharedQuestion !== null;
+  const existingTableNames = tables.map((t) => t.schema.tableName);
+  const isSample = tables.length === 1 && tables[0].fileName === SAMPLE_CSV_NAME;
+  const showSharedNotice = tables.length === 0 && !loadingSample && sharedQuestion !== null;
+
+  function addTable(schema: TableSchema, fileName: string) {
+    setTables((prev) => [...prev, { schema, fileName }]);
+  }
+
+  function removeTable(tableName: string) {
+    // Drop from DuckDB in the background; update the UI immediately.
+    void dropTable(tableName).catch(() => {});
+    setTables((prev) => prev.filter((t) => t.schema.tableName !== tableName));
+  }
 
   return (
     <div className="min-h-screen bg-background">
       <main className="mx-auto flex w-full max-w-3xl flex-col px-6 pt-12 pb-24">
         <header>
-          <span className="font-mono text-xs tracking-[0.2em] text-muted-foreground">
-            AskQL
-          </span>
+          <div className="flex items-center justify-between gap-4">
+            <span className="font-mono text-xs tracking-[0.2em] text-muted-foreground">
+              AskQL
+            </span>
+            <ApiKeyDialog />
+          </div>
           <h1 className="mt-3 text-3xl font-medium tracking-tight text-foreground">
             Pregúntale a tus datos
           </h1>
           <p className="mt-2 max-w-lg text-muted-foreground">
-            Sube un CSV o Excel y pregunta en lenguaje natural. AskQL traduce tu
-            pregunta a SQL, la ejecuta sobre tus datos y te devuelve los resultados
-            en una tabla lista para exportar a Excel.
+            Sube uno o varios archivos (CSV o Excel) y pregunta en lenguaje natural.
+            AskQL traduce tu pregunta a SQL —incluyendo joins entre tablas—, la ejecuta
+            sobre tus datos y te devuelve los resultados en una tabla lista para exportar
+            a Excel.
           </p>
           <div className="mt-8 h-px w-full bg-border" />
         </header>
@@ -66,32 +90,41 @@ export default function Home() {
           <Disclaimer />
 
           <Section index="01" label="DATOS">
-            {loaded ? (
-              <SchemaPreview
-                schema={loaded.schema}
-                fileName={loaded.fileName}
-                onReset={() => setLoaded(null)}
-              />
-            ) : loadingSample ? (
-              <p className="text-sm text-muted-foreground">Cargando datos de ejemplo…</p>
-            ) : (
-              <div className="space-y-3">
-                {showSharedNotice && (
-                  <p className="rounded-lg border border-primary/25 bg-accent/40 px-4 py-3 text-sm text-accent-foreground">
-                    Recibiste una consulta compartida: «{sharedQuestion}». Sube tu
-                    archivo para ejecutarla.
-                  </p>
-                )}
-                <CsvUpload onLoaded={(schema, fileName) => setLoaded({ schema, fileName })} />
-              </div>
-            )}
+            <div className="space-y-4">
+              {tables.map((table) => (
+                <SchemaPreview
+                  key={table.schema.tableName}
+                  schema={table.schema}
+                  fileName={table.fileName}
+                  onRemove={() => removeTable(table.schema.tableName)}
+                />
+              ))}
+
+              {loadingSample ? (
+                <p className="text-sm text-muted-foreground">Cargando datos de ejemplo…</p>
+              ) : (
+                <div className="space-y-3">
+                  {showSharedNotice && (
+                    <p className="rounded-lg border border-primary/25 bg-accent/40 px-4 py-3 text-sm text-accent-foreground">
+                      Recibiste una consulta compartida: «{sharedQuestion}». Sube tu
+                      archivo para ejecutarla.
+                    </p>
+                  )}
+                  {tables.length > 0 && (
+                    <span className="block font-mono text-xs tracking-[0.15em] text-muted-foreground">
+                      AGREGAR OTRO ARCHIVO
+                    </span>
+                  )}
+                  <CsvUpload existingTableNames={existingTableNames} onLoaded={addTable} />
+                </div>
+              )}
+            </div>
           </Section>
 
-          {loaded && (
+          {tables.length > 0 && (
             <Section index="02" label="CONSULTA">
               <QueryConsole
-                key={loaded.fileName}
-                schema={loaded.schema}
+                tables={tables.map((t) => t.schema)}
                 isSample={isSample}
                 initialQuestion={sharedQuestion ?? undefined}
                 autoRun={autoRunShared}

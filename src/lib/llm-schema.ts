@@ -20,7 +20,8 @@ const ChatMessageSchema = z.object({
 
 export const SqlRequestSchema = z.object({
   question: z.string().min(1).max(2000),
-  schema: TableSchemaInput,
+  // One or more loaded tables. Multiple tables enable cross-table joins.
+  tables: z.array(TableSchemaInput).min(1).max(8),
   history: z.array(ChatMessageSchema).max(20).optional(),
   failedSql: z
     .object({

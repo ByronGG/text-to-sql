@@ -23,9 +23,9 @@ import { runQuery, type QueryResult } from "@/lib/run-query";
 import { cn } from "@/lib/utils";
 
 interface QueryConsoleProps {
-  schema: TableSchema;
-  /** True when the loaded dataset is the bundled sample, so shared links can
-   * carry `sample=1` and auto-run on the recipient's side. */
+  tables: TableSchema[];
+  /** True when the loaded dataset is exactly the bundled sample, so shared
+   * links can carry `sample=1` and auto-run on the recipient's side. */
   isSample: boolean;
   /** Prefills the input — used when arriving from a shared link. */
   initialQuestion?: string;
@@ -56,7 +56,9 @@ const MAX_RETRIES = 2;
 // while giving the model enough context for follow-ups.
 const HISTORY_TURNS = 6;
 
-export function QueryConsole({ schema, isSample, initialQuestion, autoRun }: QueryConsoleProps) {
+export function QueryConsole({ tables, isSample, initialQuestion, autoRun }: QueryConsoleProps) {
+  const allowedTableNames = tables.map((t) => t.tableName);
+
   const [question, setQuestion] = useState(initialQuestion ?? "");
   const [status, setStatus] = useState<Status>("idle");
   const [retryAttempt, setRetryAttempt] = useState(0);
@@ -99,7 +101,7 @@ export function QueryConsole({ schema, isSample, initialQuestion, autoRun }: Que
 
     let response;
     try {
-      response = await askQuestion({ question: forQuestion, schema, history, failedSql });
+      response = await askQuestion({ question: forQuestion, tables, history, failedSql });
     } catch (err) {
       setErrorMessage(err instanceof Error ? err.message : "No se pudo contactar el servicio.");
       setStatus("error");
@@ -113,7 +115,7 @@ export function QueryConsole({ schema, isSample, initialQuestion, autoRun }: Que
     }
 
     try {
-      const result = await runQuery(response.consulta);
+      const result = await runQuery(response.consulta, allowedTableNames);
       const turn: Turn = {
         id: crypto.randomUUID(),
         question: displayQuestion,

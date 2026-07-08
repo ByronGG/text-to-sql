@@ -22,12 +22,52 @@ const FORBIDDEN_CALLS = [
   "pragma_", "duckdb_", "sqlite_scan", "httpfs",
 ];
 
+// Names defined inline by a CTE (`WITH name AS (...)`, plus each `, name AS (...)`),
+// so they aren't mistaken for references to unknown tables.
+function cteNames(lower: string): Set<string> {
+  const names = new Set<string>();
+  const re = /(?:\bwith\b|,)\s+"?([a-z_][a-z0-9_]*)"?\s+as\s*\(/g;
+  let match: RegExpExecArray | null;
+  while ((match = re.exec(lower)) !== null) names.add(match[1]);
+  return names;
+}
+
+/**
+ * Rejects the statement if it reads from a bare table name that isn't one of
+ * the loaded tables (or a CTE it defines). Only bare identifiers right after
+ * FROM/JOIN are checked — subqueries (`FROM (`) and table functions
+ * (`name(...)`) are skipped — so this catches the model hallucinating a table
+ * without tripping on legitimate SQL. `allowed` is matched case-insensitively.
+ */
+function validateTableReferences(statement: string, allowed: string[]): void {
+  const lower = statement.toLowerCase();
+  const known = new Set([...allowed.map((t) => t.toLowerCase()), ...cteNames(lower)]);
+
+  // FROM/JOIN followed by an identifier. The negative lookahead skips table
+  // functions (`name(...)`) without consuming characters — consuming here would
+  // eat into a following JOIN keyword and miss its table. Subqueries (`FROM (`)
+  // don't match since "(" isn't an identifier start.
+  const re = /\b(?:from|join)\s+"?([a-z_][a-z0-9_]*)"?(?!\s*\()/g;
+  let match: RegExpExecArray | null;
+  while ((match = re.exec(lower)) !== null) {
+    const name = match[1];
+    if (!known.has(name)) {
+      throw new SqlValidationError(
+        `La consulta hace referencia a una tabla no cargada: ${name}.`,
+      );
+    }
+  }
+}
+
 /**
  * Throws if `sql` is anything other than a single read-only SELECT/CTE
  * statement. Returns the trimmed statement (no trailing semicolons) on
  * success. This is the only gate between LLM-generated SQL and execution.
+ *
+ * When `allowedTables` is provided, the statement may only read from those
+ * tables (or CTEs it defines) — see `validateTableReferences`.
  */
-export function validateSelectOnly(sql: string): string {
+export function validateSelectOnly(sql: string, allowedTables?: string[]): string {
   const statement = sql.trim().replace(/;+\s*$/, "");
 
   if (statement.length === 0) {
@@ -55,6 +95,10 @@ export function validateSelectOnly(sql: string): string {
         `La consulta usa una función no permitida: ${call.replace("(", "")}.`,
       );
     }
+  }
+
+  if (allowedTables && allowedTables.length > 0) {
+    validateTableReferences(statement, allowedTables);
   }
 
   return statement;

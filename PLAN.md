@@ -148,21 +148,37 @@ apoya en todos los anteriores.
   top-N y el camino de "aclaración" (human-in-the-loop). Un intento por caso
   (single-shot, sin auto-corrección) → 16 de las 20 solicitudes del rate limit por
   ventana. Comparador en `run-eval.ts`.
-- [ ] **Paso 2 · Múltiples archivos con JOINs** — `csv-upload` maneja una lista de
-  archivos, cada uno a su propia tabla. Rompe el invariante de nombre fijo `datos`:
-  hay que derivar nombres saneados (allowlist de caracteres, nunca interpolar el
-  nombre crudo del archivo) y mantener un registro de tablas activas. El esquema de
-  todas las tablas + pistas de llaves de join (columnas homónimas del mismo tipo) van
-  al prompt; `sql-guard` valida que el SQL solo referencie tablas registradas. UI:
-  lista de tablas cargadas con quitar/reemplazar.
-- [ ] **Paso 3 · BYOK (trae tu propia key)** — campo opcional de API key en
-  `localStorage`, enviado por header a `/api/sql`; si viene, la route la usa en lugar
-  de `GROQ_API_KEY` y salta el rate limit. Nunca se persiste en el servidor. Protege
-  contra el límite del free tier de Groq.
-- [ ] **Paso 4 · Cache de preguntas** — hash de `(pregunta normalizada + huella del
-  esquema)` → respuesta del LLM, en la route (o `localStorage` en cliente). Ahorra
-  cuota sobre todo con los enlaces compartidos del dataset de ejemplo, reproducibles
-  por diseño.
+- [x] **Paso 2 · Múltiples archivos con JOINs** — `page.tsx` mantiene una lista de
+  tablas (agregar/quitar). Cada archivo carga en su propia tabla con nombre saneado por
+  `deriveTableName` (identificador SQL seguro, deduplicado; el nombre real del archivo
+  nunca llega a SQL), y `loadCsvAsTable(file, tableName)` ya no borra las demás. La
+  API pasó de `schema` único a `tables[]`; `sql-prompt.ts` renderiza todas las tablas
+  y añade "relaciones sugeridas" (columnas homónimas → posibles llaves de JOIN).
+  `validateSelectOnly(sql, allowedTables)` rechaza referencias a tablas no cargadas
+  (lookahead que salta funciones de tabla y subconsultas). UI: cada tabla es una
+  tarjeta con su chip de nombre SQL y "Quitar", más "Agregar otro archivo".
+  Verificado: JOINs correctos que solo referencian tablas registradas, guard con 8/8
+  casos, y la muestra carga como tabla `ventas` en el navegador. La muestra pasa de
+  `datos` a un nombre propio (`ventas`) para leerse bien junto a tablas del usuario.
+- [x] **Paso 3 · BYOK (trae tu propia key)** — diálogo "API key" en el header
+  (`api-key-dialog.tsx`) guarda la key en `localStorage` (`api-key.ts`); `ask-question`
+  la envía por header `x-groq-api-key`. Si viene, la route la usa en lugar de
+  `GROQ_API_KEY` y **salta el rate limit** (protege la cuota compartida, no la del
+  usuario); nunca se persiste en el servidor. Mensaje 401 específico si Groq rechaza la
+  key. Disponible también en `/eval`, donde evita el throttling del free-tier.
+  Verificado: key inválida → 401 propio (prueba que la key del cliente se lee y se usa),
+  sin header → key compartida OK, y el flujo de guardar/quitar/indicador "activa" en el
+  navegador.
+- [x] **Paso 4 · Cache de preguntas** — cache en memoria en la route (`sql-cache.ts`)
+  con clave `sha256(pregunta normalizada + JSON del esquema)`. Se eligió servidor (no
+  `localStorage`) porque el objetivo son los enlaces compartidos del ejemplo, donde
+  muchos usuarios distintos hacen la misma pregunta sobre el mismo CSV → un hit los
+  beneficia a todos. Solo cachea primer turno (sin `history` ni `failedSql`); LRU de
+  500 entradas. El chequeo va **antes** del rate limit (un hit es gratis, no consume
+  cuota ni requiere key). Header `x-cache: HIT|MISS`. Verificado: repetición idéntica y
+  variación de mayúsculas/espacios → HIT (~7-11ms vs ~500ms, cuerpo idéntico); con
+  history o esquema distinto → MISS. Beneficio extra: re-correr `/eval` es instantáneo
+  y no toca el throttling de Groq.
 - [ ] **Paso 5 · Conexión a Postgres real** — el cierre grande y el único que cambia
   la arquitectura: aparece un backend con credenciales, usuario read-only, límites de
   filas/timeout del lado servidor. El argumento "tus datos nunca salen del navegador"

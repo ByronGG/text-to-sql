@@ -14,16 +14,39 @@ export interface TableSchema {
   sampleRows: Record<string, unknown>[];
 }
 
-export const TABLE_NAME = "datos";
-
 export const SAMPLE_CSV_URL = "/sample-data/ventas.csv";
 export const SAMPLE_CSV_NAME = "ventas-ejemplo.csv";
+// The sample loads as a named table (not a generic "datos") so it reads well
+// next to a user's own tables in the multi-table UI.
+const SAMPLE_TABLE_NAME = "ventas";
 
-// Fixed virtual filename: avoids ever interpolating the user's real
-// filename (which could contain quotes/special chars) into SQL.
-const VIRTUAL_FILE_NAME = "upload.csv";
 const SAMPLE_ROW_COUNT = 5;
 const CATEGORICAL_MAX_DISTINCT = 20;
+const MAX_IDENT_LENGTH = 40;
+
+/**
+ * Turns an arbitrary file/display name into a safe SQL identifier, unique
+ * among `existing`. Table names are the one place a user-derived string reaches
+ * SQL, so this is strict: lowercase ASCII letters/digits/underscore, starting
+ * with a letter or underscore. The result is still double-quoted at every use
+ * site (and the virtual filename is derived from it) as defense in depth.
+ */
+export function deriveTableName(displayName: string, existing: string[] = []): string {
+  const base =
+    displayName
+      .normalize("NFD")
+      .replace(/\p{Diacritic}/gu, "") // strip accents
+      .toLowerCase()
+      .replace(/\.[a-z0-9]+$/i, "") // drop a trailing extension
+      .replace(/[^a-z0-9_]+/g, "_")
+      .replace(/^_+|_+$/g, "")
+      .slice(0, MAX_IDENT_LENGTH) || "tabla";
+  const safe = /^[a-z_]/.test(base) ? base : `t_${base}`;
+  let name = safe;
+  let i = 2;
+  while (existing.includes(name)) name = `${safe}_${i++}`;
+  return name;
+}
 
 // DuckDB-WASM (via Arrow) surfaces DATE/TIMESTAMP columns as raw epoch-ms
 // numbers rather than JS Date instances, so formatting must key off the
@@ -51,70 +74,90 @@ function serializeRow(
   );
 }
 
-/** Registers a CSV file in DuckDB-WASM and extracts the schema + context an LLM needs. */
-export async function loadCsvAsTable(file: File): Promise<TableSchema> {
-  const db = await getDuckDB();
+// The virtual filename DuckDB reads from is derived from the (already
+// sanitized) table name, never the user's real filename.
+const virtualFileFor = (tableName: string) => `${tableName}.csv`;
 
-  await db.dropFile(VIRTUAL_FILE_NAME).catch(() => {});
+async function extractSchema(
+  conn: Awaited<ReturnType<Awaited<ReturnType<typeof getDuckDB>>["connect"]>>,
+  tableName: string,
+): Promise<TableSchema> {
+  const describeResult = await conn.query(`DESCRIBE "${tableName}"`);
+  const columns: ColumnSchema[] = describeResult.toArray().map((row) => ({
+    name: row.column_name as string,
+    type: row.column_type as string,
+  }));
+
+  const countResult = await conn.query(`SELECT COUNT(*)::BIGINT AS n FROM "${tableName}"`);
+  const rowCount = Number(countResult.toArray()[0].toJSON().n);
+
+  const sampleResult = await conn.query(`SELECT * FROM "${tableName}" LIMIT ${SAMPLE_ROW_COUNT}`);
+  const sampleRows = sampleResult.toArray().map((row) => serializeRow(row.toJSON(), columns));
+
+  const columnsWithCategories = await Promise.all(
+    columns.map(async (column) => {
+      if (!column.type.includes("VARCHAR")) return column;
+
+      const distinctResult = await conn.query(
+        `SELECT DISTINCT "${column.name}" AS v FROM "${tableName}" ` +
+          `WHERE "${column.name}" IS NOT NULL LIMIT ${CATEGORICAL_MAX_DISTINCT + 1}`,
+      );
+      const values = distinctResult.toArray().map((row) => String(row.toJSON().v));
+      if (values.length > CATEGORICAL_MAX_DISTINCT) return column;
+
+      return { ...column, categoricalValues: values };
+    }),
+  );
+
+  return { tableName, rowCount, columns: columnsWithCategories, sampleRows };
+}
+
+/**
+ * Registers a CSV file in DuckDB-WASM under a named table and extracts the
+ * schema + context an LLM needs. Only touches its own table (drops+replaces a
+ * table of the same name), leaving any other loaded tables intact so several
+ * files can coexist for cross-table joins.
+ */
+export async function loadCsvAsTable(file: File, tableName: string): Promise<TableSchema> {
+  const db = await getDuckDB();
+  const virtualName = virtualFileFor(tableName);
+
+  await db.dropFile(virtualName).catch(() => {});
   const buffer = new Uint8Array(await file.arrayBuffer());
-  await db.registerFileBuffer(VIRTUAL_FILE_NAME, buffer);
+  await db.registerFileBuffer(virtualName, buffer);
 
   const conn = await db.connect();
   try {
-    await conn.query(`DROP TABLE IF EXISTS ${TABLE_NAME}`);
+    await conn.query(`DROP TABLE IF EXISTS "${tableName}"`);
     await conn.query(
-      `CREATE TABLE ${TABLE_NAME} AS SELECT * FROM read_csv_auto('${VIRTUAL_FILE_NAME}')`,
+      `CREATE TABLE "${tableName}" AS SELECT * FROM read_csv_auto('${virtualName}')`,
     );
-
-    const describeResult = await conn.query(`DESCRIBE ${TABLE_NAME}`);
-    const columns: ColumnSchema[] = describeResult.toArray().map((row) => ({
-      name: row.column_name as string,
-      type: row.column_type as string,
-    }));
-
-    const countResult = await conn.query(
-      `SELECT COUNT(*)::BIGINT AS n FROM ${TABLE_NAME}`,
-    );
-    const rowCount = Number(countResult.toArray()[0].toJSON().n);
-
-    const sampleResult = await conn.query(
-      `SELECT * FROM ${TABLE_NAME} LIMIT ${SAMPLE_ROW_COUNT}`,
-    );
-    const sampleRows = sampleResult
-      .toArray()
-      .map((row) => serializeRow(row.toJSON(), columns));
-
-    const columnsWithCategories = await Promise.all(
-      columns.map(async (column) => {
-        if (!column.type.includes("VARCHAR")) return column;
-
-        const distinctResult = await conn.query(
-          `SELECT DISTINCT "${column.name}" AS v FROM ${TABLE_NAME} ` +
-            `WHERE "${column.name}" IS NOT NULL LIMIT ${CATEGORICAL_MAX_DISTINCT + 1}`,
-        );
-        const values = distinctResult.toArray().map((row) => String(row.toJSON().v));
-        if (values.length > CATEGORICAL_MAX_DISTINCT) return column;
-
-        return { ...column, categoricalValues: values };
-      }),
-    );
-
-    return {
-      tableName: TABLE_NAME,
-      rowCount,
-      columns: columnsWithCategories,
-      sampleRows,
-    };
+    return await extractSchema(conn, tableName);
   } finally {
     await conn.close();
   }
 }
 
-/** Fetches the bundled sample CSV and loads it as the table. */
-export async function loadSampleTable(): Promise<{ schema: TableSchema; fileName: string }> {
+/** Drops a loaded table and unregisters its backing file buffer. */
+export async function dropTable(tableName: string): Promise<void> {
+  const db = await getDuckDB();
+  const conn = await db.connect();
+  try {
+    await conn.query(`DROP TABLE IF EXISTS "${tableName}"`);
+  } finally {
+    await conn.close();
+  }
+  await db.dropFile(virtualFileFor(tableName)).catch(() => {});
+}
+
+/** Fetches the bundled sample CSV and loads it as a (uniquely named) table. */
+export async function loadSampleTable(
+  existing: string[] = [],
+): Promise<{ schema: TableSchema; fileName: string }> {
+  const tableName = deriveTableName(SAMPLE_TABLE_NAME, existing);
   const response = await fetch(SAMPLE_CSV_URL);
   const blob = await response.blob();
   const file = new File([blob], SAMPLE_CSV_NAME, { type: "text/csv" });
-  const schema = await loadCsvAsTable(file);
+  const schema = await loadCsvAsTable(file, tableName);
   return { schema, fileName: SAMPLE_CSV_NAME };
 }
