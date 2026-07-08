@@ -129,13 +129,49 @@ Ordenado para que cada paso deje algo funcional y probable por sí solo.
 - [ ] **Paso 5 · Cierre v2** — README actualizado (gif del flujo con gráfica),
   verificación responsive/accesibilidad, build + deploy.
 
-### v3 — Alcance
-- **Múltiples archivos con JOINs** entre tablas (complica prompt y validación).
-- Conexión a una base **Postgres real** (aquí sí aparece un backend de verdad:
-  credenciales, usuario read-only, sandboxing).
-- BYOK: que el usuario pegue su propia API key para uso sin límites.
-- Cache de preguntas frecuentes para ahorrar tokens.
+---
+
+## Roadmap v3 — Capacidad y robustez
+
+Mismo criterio que v2: cada paso deja algo funcional y demostrable por sí solo. El
+orden no es casual — 1 y 2 suben la capacidad del producto sin tocar la arquitectura;
+3 y 4 son endurecimiento operativo barato; 5 es el único cambio arquitectónico y se
+apoya en todos los anteriores.
+
+- [x] **Paso 1 · Set de evaluación (execution accuracy)** — batería de 16 preguntas
+  sobre el CSV de ejemplo (`eval-cases.ts`), corrida por el pipeline real
+  (`askQuestion` → `sql-guard` → `runQuery`) desde la página `/eval`, que puntúa en
+  vivo. Compara el *conjunto de resultados* del SQL generado, no su texto: cada caso
+  fija solo los valores que deben aparecer, ignorando nombres/orden de columnas, con
+  modos `exact` (bijección por valores, cardinalidad exacta) y `prefix` (top-N donde
+  el LIMIT es opcional). Cubre agregación, group by, filtros de fecha/compuestos,
+  top-N y el camino de "aclaración" (human-in-the-loop). Un intento por caso
+  (single-shot, sin auto-corrección) → 16 de las 20 solicitudes del rate limit por
+  ventana. Comparador en `run-eval.ts`.
+- [ ] **Paso 2 · Múltiples archivos con JOINs** — `csv-upload` maneja una lista de
+  archivos, cada uno a su propia tabla. Rompe el invariante de nombre fijo `datos`:
+  hay que derivar nombres saneados (allowlist de caracteres, nunca interpolar el
+  nombre crudo del archivo) y mantener un registro de tablas activas. El esquema de
+  todas las tablas + pistas de llaves de join (columnas homónimas del mismo tipo) van
+  al prompt; `sql-guard` valida que el SQL solo referencie tablas registradas. UI:
+  lista de tablas cargadas con quitar/reemplazar.
+- [ ] **Paso 3 · BYOK (trae tu propia key)** — campo opcional de API key en
+  `localStorage`, enviado por header a `/api/sql`; si viene, la route la usa en lugar
+  de `GROQ_API_KEY` y salta el rate limit. Nunca se persiste en el servidor. Protege
+  contra el límite del free tier de Groq.
+- [ ] **Paso 4 · Cache de preguntas** — hash de `(pregunta normalizada + huella del
+  esquema)` → respuesta del LLM, en la route (o `localStorage` en cliente). Ahorra
+  cuota sobre todo con los enlaces compartidos del dataset de ejemplo, reproducibles
+  por diseño.
+- [ ] **Paso 5 · Conexión a Postgres real** — el cierre grande y el único que cambia
+  la arquitectura: aparece un backend con credenciales, usuario read-only, límites de
+  filas/timeout del lado servidor. El argumento "tus datos nunca salen del navegador"
+  ya no aplica en este modo, así que se presenta como un modo separado con su propio
+  disclaimer. Máxima superficie de riesgo → va al final, apoyado en el eval del Paso 1
+  para validar el prompt.
 
 ### Ideas sueltas (si sobra tiempo)
-- Modo "explica esta consulta" (SQL → lenguaje natural, el camino inverso).
-- Evaluación: set de preguntas de prueba con SQL esperado para medir precisión.
+- Modo "explica esta consulta" (SQL → lenguaje natural, el camino inverso). Barato,
+  se puede colar en cualquier hueco.
+- Streaming de la respuesta del LLM (mejora percepción de velocidad; el JSON
+  estructurado lo complica).
