@@ -4,11 +4,8 @@ import { useCallback, useRef, useState } from "react";
 import type { WorkBook } from "xlsx";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { loadCsvAsTable, type TableSchema } from "@/lib/csv-table";
+import { loadCsvAsTable, loadSampleTable, type TableSchema } from "@/lib/csv-table";
 import { isExcelFile, parseWorkbook, sheetToCsvFile, stripExtension } from "@/lib/xlsx-input";
-
-const SAMPLE_CSV_URL = "/sample-data/ventas.csv";
-const SAMPLE_CSV_NAME = "ventas-ejemplo.csv";
 
 interface CsvUploadProps {
   onLoaded: (schema: TableSchema, fileName: string) => void;
@@ -108,14 +105,16 @@ export function CsvUpload({ onLoaded }: CsvUploadProps) {
   const handleSample = useCallback(async () => {
     setError(null);
     setSheetChoice(null);
+    setIsLoading(true);
     try {
-      const response = await fetch(SAMPLE_CSV_URL);
-      const blob = await response.blob();
-      await loadCsvFile(new File([blob], SAMPLE_CSV_NAME, { type: "text/csv" }), SAMPLE_CSV_NAME);
+      const { schema, fileName } = await loadSampleTable();
+      onLoaded(schema, fileName);
     } catch {
       setError("No se pudo cargar el ejemplo.");
+    } finally {
+      setIsLoading(false);
     }
-  }, [loadCsvFile]);
+  }, [onLoaded]);
 
   return (
     <Card>

@@ -1,7 +1,7 @@
 "use client";
 
-import { useState } from "react";
-import { AlertCircle, ChevronDown, ChevronRight } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import { AlertCircle, Check, ChevronDown, ChevronRight, Share2 } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -24,6 +24,13 @@ import { cn } from "@/lib/utils";
 
 interface QueryConsoleProps {
   schema: TableSchema;
+  /** True when the loaded dataset is the bundled sample, so shared links can
+   * carry `sample=1` and auto-run on the recipient's side. */
+  isSample: boolean;
+  /** Prefills the input — used when arriving from a shared link. */
+  initialQuestion?: string;
+  /** Runs `initialQuestion` automatically on mount (only safe for the sample). */
+  autoRun?: boolean;
 }
 
 // Matches the API's history contract (only user/assistant turns).
@@ -49,8 +56,8 @@ const MAX_RETRIES = 2;
 // while giving the model enough context for follow-ups.
 const HISTORY_TURNS = 6;
 
-export function QueryConsole({ schema }: QueryConsoleProps) {
-  const [question, setQuestion] = useState("");
+export function QueryConsole({ schema, isSample, initialQuestion, autoRun }: QueryConsoleProps) {
+  const [question, setQuestion] = useState(initialQuestion ?? "");
   const [status, setStatus] = useState<Status>("idle");
   const [retryAttempt, setRetryAttempt] = useState(0);
   const [turns, setTurns] = useState<Turn[]>([]);
@@ -59,6 +66,7 @@ export function QueryConsole({ schema }: QueryConsoleProps) {
   const [clarification, setClarification] = useState<Clarification | null>(null);
   const [clarificationAnswer, setClarificationAnswer] = useState("");
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [shareCopied, setShareCopied] = useState(false);
 
   const active = turns.find((t) => t.id === activeId) ?? null;
 
@@ -135,6 +143,33 @@ export function QueryConsole({ schema }: QueryConsoleProps) {
     setStatus("loading");
     setErrorMessage(null);
     await runAttempts(text, text, buildHistory(), undefined, 0);
+  }
+
+  // Auto-runs a shared question once on mount. Deferred to a timeout so the
+  // state updates happen outside the effect body (not a synchronous setState).
+  // The ref guard makes it fire exactly once even under StrictMode's
+  // double-invoke; no cleanup, so that double-invoke can't cancel the timer.
+  const didAutoRun = useRef(false);
+  useEffect(() => {
+    if (!autoRun || !initialQuestion || didAutoRun.current) return;
+    didAutoRun.current = true;
+    setTimeout(() => void handleAsk(), 0);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  async function handleShare() {
+    if (!active) return;
+    const url = new URL(window.location.href);
+    url.search = "";
+    url.searchParams.set("q", active.question);
+    if (isSample) url.searchParams.set("sample", "1");
+    try {
+      await navigator.clipboard.writeText(url.toString());
+      setShareCopied(true);
+      setTimeout(() => setShareCopied(false), 2000);
+    } catch {
+      // Clipboard can be blocked (e.g. insecure context); silently ignore.
+    }
   }
 
   async function handleClarificationSubmit() {
@@ -250,14 +285,31 @@ export function QueryConsole({ schema }: QueryConsoleProps) {
             <p className="text-sm">{active.interpretation}</p>
 
             <div>
-              <button
-                type="button"
-                onClick={() => setShowSql((v) => !v)}
-                className="inline-flex items-center gap-1 text-xs text-muted-foreground transition-colors hover:text-foreground"
-              >
-                {showSql ? <ChevronDown className="size-3.5" /> : <ChevronRight className="size-3.5" />}
-                {showSql ? "Ocultar SQL" : "Ver SQL generado"}
-              </button>
+              <div className="flex items-center gap-4">
+                <button
+                  type="button"
+                  onClick={() => setShowSql((v) => !v)}
+                  className="inline-flex items-center gap-1 text-xs text-muted-foreground transition-colors hover:text-foreground"
+                >
+                  {showSql ? <ChevronDown className="size-3.5" /> : <ChevronRight className="size-3.5" />}
+                  {showSql ? "Ocultar SQL" : "Ver SQL generado"}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => void handleShare()}
+                  className="inline-flex items-center gap-1 text-xs text-muted-foreground transition-colors hover:text-foreground"
+                >
+                  {shareCopied ? (
+                    <>
+                      <Check className="size-3.5 text-primary" /> Enlace copiado
+                    </>
+                  ) : (
+                    <>
+                      <Share2 className="size-3.5" /> Compartir
+                    </>
+                  )}
+                </button>
+              </div>
               {showSql && <div className="mt-2"><SqlCodeBlock sql={active.sql} /></div>}
             </div>
 

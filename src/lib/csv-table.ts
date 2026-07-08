@@ -16,6 +16,9 @@ export interface TableSchema {
 
 export const TABLE_NAME = "datos";
 
+export const SAMPLE_CSV_URL = "/sample-data/ventas.csv";
+export const SAMPLE_CSV_NAME = "ventas-ejemplo.csv";
+
 // Fixed virtual filename: avoids ever interpolating the user's real
 // filename (which could contain quotes/special chars) into SQL.
 const VIRTUAL_FILE_NAME = "upload.csv";
@@ -105,4 +108,13 @@ export async function loadCsvAsTable(file: File): Promise<TableSchema> {
   } finally {
     await conn.close();
   }
+}
+
+/** Fetches the bundled sample CSV and loads it as the table. */
+export async function loadSampleTable(): Promise<{ schema: TableSchema; fileName: string }> {
+  const response = await fetch(SAMPLE_CSV_URL);
+  const blob = await response.blob();
+  const file = new File([blob], SAMPLE_CSV_NAME, { type: "text/csv" });
+  const schema = await loadCsvAsTable(file);
+  return { schema, fileName: SAMPLE_CSV_NAME };
 }

@@ -121,10 +121,11 @@ Ordenado para que cada paso deje algo funcional y probable por sí solo.
   (`xlsx-input.ts`), convierte la hoja a CSV y entra al mismo pipeline de DuckDB.
   Una hoja → carga directa; varias → selector de hoja en `csv-upload.tsx`. Copy
   actualizado (acepta CSV o Excel).
-- [ ] **Paso 4 · Compartir consulta por URL** — codificar la pregunta en la URL;
-  al abrir el enlace con el dataset de ejemplo se auto-ejecuta. Con archivo propio
-  solo se precarga la pregunta y se pide volver a subir el archivo (los datos nunca
-  salen del navegador, no hay nada que "compartir" del lado del servidor).
+- [x] **Paso 4 · Compartir consulta por URL** — botón "Compartir" en cada resultado
+  copia un enlace con `?q=<pregunta>` (+ `sample=1` si el dataset es el ejemplo).
+  Enlace de ejemplo → auto-carga el CSV y ejecuta; enlace de archivo propio → muestra
+  aviso y precarga la pregunta para re-subir el archivo (los datos nunca salen del
+  navegador). Lectura de URL en `page.tsx`, `loadSampleTable()` centralizado.
 - [ ] **Paso 5 · Cierre v2** — README actualizado (gif del flujo con gráfica),
   verificación responsive/accesibilidad, build + deploy.
 
