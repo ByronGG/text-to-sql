@@ -179,12 +179,20 @@ apoya en todos los anteriores.
   variación de mayúsculas/espacios → HIT (~7-11ms vs ~500ms, cuerpo idéntico); con
   history o esquema distinto → MISS. Beneficio extra: re-correr `/eval` es instantáneo
   y no toca el throttling de Groq.
-- [ ] **Paso 5 · Conexión a Postgres real** — el cierre grande y el único que cambia
-  la arquitectura: aparece un backend con credenciales, usuario read-only, límites de
-  filas/timeout del lado servidor. El argumento "tus datos nunca salen del navegador"
-  ya no aplica en este modo, así que se presenta como un modo separado con su propio
-  disclaimer. Máxima superficie de riesgo → va al final, apoyado en el eval del Paso 1
-  para validar el prompt.
+- [x] **Paso 5 · Conexión a Postgres real** — modo separado ("Archivo" vs "Postgres"
+  en la sección DATOS). La introspección y ejecución ocurren en el servidor
+  (`pg-server.ts` con `pg`): `introspectSchema` lee el esquema `public` al mismo shape
+  `TableSchema` que los CSV (así prompt/guard/UI se reutilizan intactos), y `runPgQuery`
+  valida (SELECT-only + allowlist de tablas), ejecuta en **transacción `READ ONLY`** con
+  `statement_timeout` y `LIMIT`, y serializa. Rutas `/api/pg/schema` y `/api/pg/query`.
+  `QueryConsole` recibe un `runSql` inyectable (DuckDB por defecto, ejecutor PG en este
+  modo). Credenciales solo en memoria del cliente, enviadas por consulta, nunca
+  persistidas. Guard endurecido con funciones peligrosas de PG (`pg_read`, `pg_sleep`,
+  `lo_import`, `dblink`…). Disclaimer propio ("tus datos sí salen del navegador; usa
+  usuario de solo lectura"). Verificado sin DB viva: guard bloquea DELETE/pg_sleep/tabla
+  desconocida **antes** de conectar, errores de conexión mapeados a mensajes amigables,
+  y el UI completo del modo (switch, form, error). Falta corrida end-to-end con un
+  Postgres real (necesita Docker levantado o una DB del usuario).
 
 ### Ideas sueltas (si sobra tiempo)
 - Modo "explica esta consulta" (SQL → lenguaje natural, el camino inverso). Barato,

@@ -15,15 +15,20 @@ There is no test runner configured yet.
 
 ## Architecture
 
-A browser-only text-to-SQL tool: the user uploads a CSV, it is queried locally with DuckDB-WASM, and the schema is extracted to give an LLM the context it needs to generate SQL. **No backend and no LLM/query-generation step exist yet** — the current app covers CSV ingestion and schema preview only. The UI is in Spanish.
+A text-to-SQL tool: the user provides data, asks a question in natural language, an LLM turns the schema (never the data) into SQL, and a real engine runs it. The UI is in Spanish. There are two data modes:
 
-Everything runs in the browser (`"use client"`); there are no server routes or server actions.
+- **Archivo (default, browser-local):** CSV/Excel is queried in the browser with DuckDB-WASM; data never leaves the browser. Only the schema is sent to the model.
+- **Postgres (server):** the user connects a database; introspection and query execution run server-side against it (data does leave the browser — a read-only user is recommended).
 
-Data flow:
-1. `src/components/csv-upload.tsx` — drag/drop or file-picker (or a bundled sample from `public/sample-data/`), hands the `File` to `loadCsvAsTable`.
-2. `src/lib/csv-table.ts` — registers the file in DuckDB and derives a `TableSchema` (columns + SQL types, row count, sample rows, and distinct values for low-cardinality text columns). This is the object intended to become LLM context.
+SQL generation is a thin server proxy to Groq (`/api/sql`) so the API key stays server-side; everything data-related in Archivo mode is client (`"use client"`).
+
+Data flow (Archivo mode):
+1. `src/components/csv-upload.tsx` — drag/drop or file-picker (or a bundled sample from `public/sample-data/`), derives a unique table name and hands the `File` to `loadCsvAsTable`.
+2. `src/lib/csv-table.ts` — registers the file in DuckDB and derives a `TableSchema` (columns + SQL types, row count, sample rows, and distinct values for low-cardinality text columns). This is the LLM context.
 3. `src/components/schema-preview.tsx` — renders the schema and sample rows.
-4. `src/app/page.tsx` — owns the list of loaded tables (add/remove) and wires the components together.
+4. `src/app/page.tsx` — owns the mode, the list of loaded tables (add/remove), and the Postgres connection; wires the components together.
+
+Postgres mode mirrors this shape: `src/lib/pg-server.ts` introspects into the same `TableSchema` and executes via `/api/pg/query` (read-only txn + timeout + row cap), so the prompt (`sql-prompt.ts`), guard (`sql-guard.ts`), and `QueryConsole` are reused unchanged — only the executor injected into `QueryConsole` (`runSql`) differs.
 
 ### Key invariants (don't break these)
 

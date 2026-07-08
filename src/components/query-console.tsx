@@ -31,6 +31,9 @@ interface QueryConsoleProps {
   initialQuestion?: string;
   /** Runs `initialQuestion` automatically on mount (only safe for the sample). */
   autoRun?: boolean;
+  /** Executes the generated SQL. Defaults to the in-browser DuckDB engine;
+   * Postgres mode injects a server-side executor instead. */
+  runSql?: (sql: string, allowedTables: string[]) => Promise<QueryResult>;
 }
 
 // Matches the API's history contract (only user/assistant turns).
@@ -56,7 +59,13 @@ const MAX_RETRIES = 2;
 // while giving the model enough context for follow-ups.
 const HISTORY_TURNS = 6;
 
-export function QueryConsole({ tables, isSample, initialQuestion, autoRun }: QueryConsoleProps) {
+export function QueryConsole({
+  tables,
+  isSample,
+  initialQuestion,
+  autoRun,
+  runSql = runQuery,
+}: QueryConsoleProps) {
   const allowedTableNames = tables.map((t) => t.tableName);
 
   const [question, setQuestion] = useState(initialQuestion ?? "");
@@ -115,7 +124,7 @@ export function QueryConsole({ tables, isSample, initialQuestion, autoRun }: Que
     }
 
     try {
-      const result = await runQuery(response.consulta, allowedTableNames);
+      const result = await runSql(response.consulta, allowedTableNames);
       const turn: Turn = {
         id: crypto.randomUUID(),
         question: displayQuestion,

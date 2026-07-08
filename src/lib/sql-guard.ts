@@ -16,10 +16,14 @@ const FORBIDDEN_KEYWORDS = [
 
 // Function-like calls that reach outside the loaded table (filesystem,
 // extension loader, system catalogs). Matched as plain substrings since
-// these are function/table names, not SQL keywords.
+// these are function/table names, not SQL keywords. Covers both DuckDB and
+// (in Postgres mode) Postgres — the read-only transaction is the real write
+// guard, but these block obviously-dangerous reads/DoS as defense in depth.
 const FORBIDDEN_CALLS = [
   "read_csv", "read_parquet", "read_json", "read_ndjson", "glob(",
   "pragma_", "duckdb_", "sqlite_scan", "httpfs",
+  "pg_read", "pg_ls", "pg_stat_file", "pg_sleep", "lo_import", "lo_export",
+  "dblink",
 ];
 
 // Names defined inline by a CTE (`WITH name AS (...)`, plus each `, name AS (...)`),

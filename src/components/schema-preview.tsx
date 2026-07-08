@@ -17,7 +17,9 @@ import type { TableSchema } from "@/lib/csv-table";
 interface SchemaPreviewProps {
   schema: TableSchema;
   fileName: string;
-  onRemove: () => void;
+  /** When provided, shows a "Quitar" control. Omitted for Postgres tables,
+   * which are removed by disconnecting the database, not one by one. */
+  onRemove?: () => void;
 }
 
 export function SchemaPreview({ schema, fileName, onRemove }: SchemaPreviewProps) {
@@ -37,13 +39,15 @@ export function SchemaPreview({ schema, fileName, onRemove }: SchemaPreviewProps
             {schema.rowCount.toLocaleString("es-MX")} filas · {schema.columns.length} columnas
           </p>
         </div>
-        <button
-          type="button"
-          onClick={onRemove}
-          className="inline-flex shrink-0 items-center gap-1 text-xs text-muted-foreground transition-colors hover:text-foreground"
-        >
-          <X className="size-3" /> Quitar
-        </button>
+        {onRemove && (
+          <button
+            type="button"
+            onClick={onRemove}
+            className="inline-flex shrink-0 items-center gap-1 text-xs text-muted-foreground transition-colors hover:text-foreground"
+          >
+            <X className="size-3" /> Quitar
+          </button>
+        )}
       </CardHeader>
       <CardContent className="space-y-4">
         <div>
