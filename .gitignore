@@ -43,3 +43,5 @@ next-env.d.ts
 # Claude / contexto local
 .claude/
 CLAUDE.md
+# Local test datasets
+test-data/
