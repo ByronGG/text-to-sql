@@ -60,7 +60,7 @@ u OpenRouter (modelos `:free`).
 - [x] **Paso 5 · Presentación** — interpretación en texto, SQL expandible con shiki, estados de carga/error
 - [x] **Paso 6a · Endurecimiento** — rate limit por IP (429 + `Retry-After`), README de arquitectura, lint en 0 errores
 - [x] **Paso 6b · Identidad y diseño** — rediseño Suizo/terracota (Archivo + IBM Plex Mono), nombre **AskQL**, favicon, metadata OG, disclaimer de privacidad
-- [ ] **Paso 6c · Deploy a Vercel** — conectar el repo en vercel.com/new + env var `GROQ_API_KEY` (acción del dueño del repo)
+- [x] **Paso 6c · Deploy a Vercel** — desplegado en **askql.vercel.app** con `GROQ_API_KEY` configurada; auto-deploy en cada push a `main`
 
 ## Flujo lógico — v1
 
@@ -127,7 +127,8 @@ Ordenado para que cada paso deje algo funcional y probable por sí solo.
   aviso y precarga la pregunta para re-subir el archivo (los datos nunca salen del
   navegador). Lectura de URL en `page.tsx`, `loadSampleTable()` centralizado.
 - [ ] **Paso 5 · Cierre v2** — README actualizado (gif del flujo con gráfica),
-  verificación responsive/accesibilidad, build + deploy.
+  verificación responsive/accesibilidad. (Build + deploy ya cubiertos: la app vive en
+  askql.vercel.app.)
 
 ---
 
@@ -194,8 +195,51 @@ apoya en todos los anteriores.
   y el UI completo del modo (switch, form, error). Falta corrida end-to-end con un
   Postgres real (necesita Docker levantado o una DB del usuario).
 
+---
+
+## Roadmap v4 — Calidad y producto
+
+v3 subió mucho la superficie de código (multi-tabla, BYOK, cache, Postgres) sin red de
+pruebas — solo el eval manual. v4 primero asegura esa base (1–2) y luego eleva la
+sensación de producto (3–5). Mismo criterio: cada paso deja algo funcional y
+demostrable por sí solo.
+
+- [x] **Paso 1 · Tests unitarios + CI** — Vitest (`vitest.config.ts`, entorno node) con
+  **65 pruebas** sobre la lógica pura: `sql-guard` (23, incluye la regresión del regex
+  de JOIN de v3 y los bloqueos de `pg_sleep`/`dblink`), `table-name` (saneo, acentos,
+  dedupe, e invariante "siempre un identificador SQL seguro"), `sql-cache`
+  (normalización de clave, sensibilidad al esquema, cap y LRU), `chart-spec` y
+  `eval-compare`. Para que la lógica fuera testeable sin DuckDB se extrajeron dos
+  módulos puros: `table-name.ts` (de `csv-table.ts`) y `eval-compare.ts` (de
+  `run-eval.ts`) — buena separación I/O vs lógica, además de testeable.
+  Scripts `typecheck`/`test`/`test:watch`; CI en `.github/workflows/ci.yml`
+  (lint + typecheck + tests en cada push/PR; Vercel cubre el build).
+  De paso, los tests encontraron un bug real: `validateSelectOnly` devolvía el
+  statement con espacio final (`"SELECT 1 "`) pese a documentar que venía trimmed.
+- [ ] **Paso 2 · Eval multi-tabla** — segundo dataset de ejemplo empaquetado (el de
+  ferretería: ventas/productos/clientes/proveedores) y ~8-10 casos de eval que exigen
+  JOIN (dos y tres tablas), midiendo por separado precisión single-table vs multi-table.
+  Es la métrica que valida el Paso 2 de v3 y protege el prompt de regresiones futuras.
+- [ ] **Paso 3 · UX de consulta** — tres mejoras pequeñas con mucho efecto:
+  (a) **preguntas sugeridas** al cargar datos (generadas por el LLM a partir del
+  esquema, 1 llamada cacheada — el usuario nuevo no sabe qué preguntar);
+  (b) **SQL editable**: editar el SQL generado y re-ejecutarlo (camino power-user;
+  pasa por el mismo guard);
+  (c) **"explica esta consulta"**: botón en el SQL que pide al modelo la explicación
+  en lenguaje natural (el camino inverso, idea de banca desde v2).
+- [ ] **Paso 4 · Persistencia local de sesión** — la conversación (turnos, SQL,
+  resultados) y las tablas cargadas sobreviven un refresh vía `localStorage` +
+  re-registro en DuckDB. Hoy un F5 pierde todo el hilo; para demos largas duele.
+- [ ] **Paso 5 · Dashboard de resultados** — "fijar" resultados (tabla o gráfica) a un
+  tablero de tarjetas reordenable. Convierte la herramienta de pregunta-única en algo
+  que produce un entregable visual (screenshot-able para el README y para reclutadores).
+- [ ] **Paso 6 · Infra compartida (si hay tráfico real)** — mover rate limit y cache a
+  Upstash Redis (free tier) para que sobrevivan cold starts y se compartan entre
+  instancias; hoy son por-instancia y está documentado como limitación consciente.
+
 ### Ideas sueltas (si sobra tiempo)
-- Modo "explica esta consulta" (SQL → lenguaje natural, el camino inverso). Barato,
-  se puede colar en cualquier hueco.
 - Streaming de la respuesta del LLM (mejora percepción de velocidad; el JSON
   estructurado lo complica).
+- Entrada Parquet (DuckDB lo lee nativo; solo falta el camino de carga).
+- Toggle de idioma ES/EN (amplía el alcance del portafolio).
+- Verificación end-to-end del modo Postgres contra una DB real sembrada (Docker).

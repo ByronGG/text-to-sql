@@ -4,12 +4,8 @@ import { useCallback, useRef, useState } from "react";
 import type { WorkBook } from "xlsx";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import {
-  deriveTableName,
-  loadCsvAsTable,
-  loadSampleTable,
-  type TableSchema,
-} from "@/lib/csv-table";
+import { loadCsvAsTable, loadSampleTable, type TableSchema } from "@/lib/csv-table";
+import { deriveTableName } from "@/lib/table-name";
 import { isExcelFile, parseWorkbook, sheetToCsvFile, stripExtension } from "@/lib/xlsx-input";
 
 interface CsvUploadProps {

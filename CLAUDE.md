@@ -10,8 +10,23 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - `npm run build` — production build
 - `npm run start` — serve the production build
 - `npm run lint` — ESLint (flat config via `eslint.config.mjs`, extends `next/core-web-vitals` + `next/typescript`)
+- `npm run typecheck` — `tsc --noEmit`
+- `npm test` / `npm run test:watch` — Vitest
 
-There is no test runner configured yet.
+## Tests
+
+Vitest (`vitest.config.ts`, node environment, `src/**/*.test.ts`). The suite covers the
+**pure** logic only — no DuckDB, no network, no DOM: `sql-guard` (the security
+boundary), `table-name`, `sql-cache`, `chart-spec`, and `eval-compare`. Anything that
+touches DuckDB or the model is exercised end-to-end by the `/eval` page instead.
+
+Two modules exist specifically to keep that logic testable in isolation, and new pure
+logic should follow the pattern rather than be inlined into an I/O module:
+`src/lib/table-name.ts` (split out of `csv-table.ts`, which imports DuckDB) and
+`src/lib/eval-compare.ts` (split out of `run-eval.ts`, which fetches and queries).
+
+CI (`.github/workflows/ci.yml`) runs lint + typecheck + tests on every push and PR;
+Vercel covers the production build.
 
 ## Architecture
 

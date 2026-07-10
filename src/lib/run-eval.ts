@@ -1,6 +1,7 @@
 import { askQuestion } from "@/lib/ask-question";
 import type { TableSchema } from "@/lib/csv-table";
-import type { EvalCase, Expectation, RowSpec } from "@/lib/eval-cases";
+import type { EvalCase } from "@/lib/eval-cases";
+import { matchResult } from "@/lib/eval-compare";
 import { runQuery, type QueryResult } from "@/lib/run-query";
 
 export type CaseStatus = "pass" | "fail" | "error";
@@ -13,72 +14,6 @@ export interface CaseOutcome {
   sql?: string;
   /** The clarifying question, when the model asked one. */
   clarification?: string;
-}
-
-// Numbers are rounded so aggregate doubles (e.g. AVG) compare cleanly, and
-// strings are trimmed/lower-cased so casing differences don't cause misses.
-function normalize(value: unknown): unknown {
-  if (typeof value === "bigint") return Number(value);
-  if (typeof value === "number") return Math.round(value * 100) / 100;
-  if (value instanceof Date) return value.toISOString().slice(0, 10);
-  if (typeof value === "string") return value.trim().toLowerCase();
-  return value;
-}
-
-function scalarsMatch(expected: unknown, actual: unknown): boolean {
-  const e = normalize(expected);
-  const a = normalize(actual);
-  if (typeof e === "number" && typeof a === "number") return Math.abs(e - a) < 0.01;
-  return e === a;
-}
-
-// A result row matches an expected spec when every expected value appears
-// somewhere in the row — ignoring column names and order, so the model is free
-// to alias columns or add descriptive ones (e.g. selecting the client name
-// alongside the total we asked about).
-function rowMatches(spec: RowSpec, row: Record<string, unknown>): boolean {
-  const actualValues = Object.values(row);
-  return Object.values(spec).every((expectedValue) =>
-    actualValues.some((actualValue) => scalarsMatch(expectedValue, actualValue)),
-  );
-}
-
-function matchExact(specs: RowSpec[], rows: Record<string, unknown>[]): boolean {
-  if (rows.length !== specs.length) return false;
-  const used = new Array(rows.length).fill(false);
-  // Greedy bijection: fine here because expected values within a case are
-  // distinct, so there's no ambiguity in which row satisfies which spec.
-  for (const spec of specs) {
-    const idx = rows.findIndex((row, i) => !used[i] && rowMatches(spec, row));
-    if (idx === -1) return false;
-    used[idx] = true;
-  }
-  return true;
-}
-
-function matchPrefix(specs: RowSpec[], rows: Record<string, unknown>[]): boolean {
-  if (rows.length < specs.length) return false;
-  return specs.every((spec, i) => rowMatches(spec, rows[i]));
-}
-
-function matchResult(
-  expected: Extract<Expectation, { kind: "result" }>,
-  result: QueryResult,
-): { passed: boolean; detail: string } {
-  const mode = expected.mode ?? "exact";
-  const passed =
-    mode === "prefix"
-      ? matchPrefix(expected.rows, result.rows)
-      : matchExact(expected.rows, result.rows);
-
-  if (passed) {
-    return { passed: true, detail: `Resultado correcto (${result.rowCount} fila(s)).` };
-  }
-  const expectedCount = mode === "prefix" ? `≥${expected.rows.length}` : `${expected.rows.length}`;
-  return {
-    passed: false,
-    detail: `Resultado incorrecto: se esperaban ${expectedCount} fila(s) que coincidieran, se obtuvieron ${result.rowCount}.`,
-  };
 }
 
 function errorMessage(err: unknown): string {

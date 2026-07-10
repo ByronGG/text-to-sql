@@ -72,7 +72,9 @@ function validateTableReferences(statement: string, allowed: string[]): void {
  * tables (or CTEs it defines) — see `validateTableReferences`.
  */
 export function validateSelectOnly(sql: string, allowedTables?: string[]): string {
-  const statement = sql.trim().replace(/;+\s*$/, "");
+  // Strip trailing semicolons *and* any whitespace around them, so the result
+  // is genuinely trimmed before it gets wrapped in the row-limiting subquery.
+  const statement = sql.trim().replace(/[\s;]+$/, "");
 
   if (statement.length === 0) {
     throw new SqlValidationError("La consulta está vacía.");
