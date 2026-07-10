@@ -9,7 +9,9 @@ import { deriveTableName } from "@/lib/table-name";
 import { isExcelFile, parseWorkbook, sheetToCsvFile, stripExtension } from "@/lib/xlsx-input";
 
 interface CsvUploadProps {
-  onLoaded: (schema: TableSchema, fileName: string) => void;
+  /** `file` is the exact CSV registered in DuckDB — the caller persists its
+   * bytes so the table can be restored after a refresh. */
+  onLoaded: (schema: TableSchema, fileName: string, file: File) => void;
   /** Table names already loaded, so a new file gets a unique table name. */
   existingTableNames?: string[];
 }
@@ -35,7 +37,7 @@ export function CsvUpload({ onLoaded, existingTableNames = [] }: CsvUploadProps)
       try {
         const tableName = deriveTableName(displayName, existingTableNames);
         const schema = await loadCsvAsTable(file, tableName);
-        onLoaded(schema, displayName);
+        onLoaded(schema, displayName, file);
       } catch (err) {
         setError(
           err instanceof Error
@@ -111,8 +113,8 @@ export function CsvUpload({ onLoaded, existingTableNames = [] }: CsvUploadProps)
     setSheetChoice(null);
     setIsLoading(true);
     try {
-      const { schema, fileName } = await loadSampleTable(existingTableNames);
-      onLoaded(schema, fileName);
+      const { schema, fileName, file } = await loadSampleTable(existingTableNames);
+      onLoaded(schema, fileName, file);
     } catch {
       setError("No se pudo cargar el ejemplo.");
     } finally {

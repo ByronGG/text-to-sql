@@ -129,13 +129,13 @@ export async function dropTable(tableName: string): Promise<void> {
 /** Fetches the bundled sample CSV and loads it as a (uniquely named) table. */
 export async function loadSampleTable(
   existing: string[] = [],
-): Promise<{ schema: TableSchema; fileName: string }> {
+): Promise<{ schema: TableSchema; fileName: string; file: File }> {
   const tableName = deriveTableName(SAMPLE_TABLE_NAME, existing);
   const response = await fetch(SAMPLE_CSV_URL);
   const blob = await response.blob();
   const file = new File([blob], SAMPLE_CSV_NAME, { type: "text/csv" });
   const schema = await loadCsvAsTable(file, tableName);
-  return { schema, fileName: SAMPLE_CSV_NAME };
+  return { schema, fileName: SAMPLE_CSV_NAME, file };
 }
 
 // Bundled relational sample (a hardware-store warehouse) used by the

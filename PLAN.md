@@ -242,12 +242,28 @@ demostrable por sí solo.
   explain da texto claro, `/api/sql` intacto tras el refactor. UI verificada por
   build/types/lint/69 tests (la corrida visual quedó pendiente: el dev server local
   ocupa el puerto y bloquea el MCP de preview).
-- [ ] **Paso 4 · Persistencia local de sesión** — la conversación (turnos, SQL,
-  resultados) y las tablas cargadas sobreviven un refresh vía `localStorage` +
-  re-registro en DuckDB. Hoy un F5 pierde todo el hilo; para demos largas duele.
-- [ ] **Paso 5 · Dashboard de resultados** — "fijar" resultados (tabla o gráfica) a un
-  tablero de tarjetas reordenable. Convierte la herramienta de pregunta-única en algo
-  que produce un entregable visual (screenshot-able para el README y para reclutadores).
+- [x] **Paso 4 · Persistencia local de sesión** — la conversación y las tablas
+  cargadas sobreviven un refresh (`session-store.ts`). Como DuckDB es en memoria, se
+  guardan los **bytes del CSV en base64** + metadatos en `localStorage` y en refresh se
+  **re-registran en DuckDB**. Diseño desacoplado: `page.tsx` persiste las tablas;
+  `query-console.tsx` persiste sus turnos etiquetados con una **firma de las tablas**
+  (`tablesSignature`) — al restaurar solo rehidrata si la firma coincide, así cargar
+  otro dataset no revive resultados obsoletos. Solo modo Archivo (Postgres nunca se
+  persiste: no guardamos credenciales); enlaces compartidos tienen prioridad y no
+  pisan la sesión guardada; fallos de cuota degradan sin romper. Tests: base64
+  round-trip (acentos, buffers grandes), validadores, firma. **Verificado en navegador
+  con reload real**: tabla (card + chip + metadatos de DuckDB), conversación y
+  resultado (gráfica) restaurados. Total: 79 tests.
+- [x] **Paso 5 · Dashboard de resultados** — botón "Fijar al tablero" en cada resultado
+  guarda la tarjeta (pregunta + interpretación + SQL + resultado) en un store reactivo
+  (`dashboard-store.ts`, `useSyncExternalStore` + `localStorage`). La ruta `/dashboard`
+  re-renderiza cada tarjeta con `QueryResults` (gráfica/tabla + export) **sin
+  re-consultar** —el resultado ya está guardado—, con reordenar (subir/bajar), quitar y
+  "limpiar tablero". Enlace "Tablero (N)" reactivo en el header. Lógica de arreglo pura
+  y testeada (add idempotente, remove, move con no-ops en los extremos, sin mutación).
+  **Verificado en navegador**: fijar actualiza conteo + botón reactivamente entre
+  componentes; 2 tarjetas renderizan sus gráficas desde datos guardados; reordenar y
+  quitar persisten y sobreviven un reload. Total: 89 tests.
 - [ ] **Paso 6 · Infra compartida (si hay tráfico real)** — mover rate limit y cache a
   Upstash Redis (free tier) para que sobrevivan cold starts y se compartan entre
   instancias; hoy son por-instancia y está documentado como limitación consciente.

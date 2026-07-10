@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { AlertCircle, Check, ChevronDown, ChevronRight, Lightbulb, Pencil, Share2, Sparkles } from "lucide-react";
+import { AlertCircle, Check, ChevronDown, ChevronRight, Lightbulb, Pencil, Pin, Share2, Sparkles } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -19,8 +19,10 @@ import { QueryResults } from "@/components/query-results";
 import { SqlCodeBlock } from "@/components/sql-code-block";
 import { askQuestion } from "@/lib/ask-question";
 import type { TableSchema } from "@/lib/csv-table";
+import { pin, unpin, useDashboard } from "@/lib/dashboard-store";
 import { fetchExplanation, fetchSuggestions } from "@/lib/llm-client";
 import { runQuery, type QueryResult } from "@/lib/run-query";
+import { loadTurns, saveTurns, tablesSignature } from "@/lib/session-store";
 import { cn } from "@/lib/utils";
 
 interface QueryConsoleProps {
@@ -35,6 +37,9 @@ interface QueryConsoleProps {
   /** Executes the generated SQL. Defaults to the in-browser DuckDB engine;
    * Postgres mode injects a server-side executor instead. */
   runSql?: (sql: string, allowedTables: string[]) => Promise<QueryResult>;
+  /** Persist the conversation to localStorage so it survives a refresh
+   * (Archivo mode only — never for Postgres, whose creds we don't store). */
+  persist?: boolean;
 }
 
 // Matches the API's history contract (only user/assistant turns).
@@ -66,8 +71,11 @@ export function QueryConsole({
   initialQuestion,
   autoRun,
   runSql = runQuery,
+  persist = false,
 }: QueryConsoleProps) {
   const allowedTableNames = tables.map((t) => t.tableName);
+  const persistSig = tablesSignature(allowedTableNames);
+  const dashboard = useDashboard();
 
   const [question, setQuestion] = useState(initialQuestion ?? "");
   const [status, setStatus] = useState<Status>("idle");
@@ -212,6 +220,21 @@ export function QueryConsole({
     }
   }
 
+  function togglePin() {
+    if (!active) return;
+    if (dashboard.some((c) => c.id === active.id)) {
+      unpin(active.id);
+    } else {
+      pin({
+        id: active.id,
+        question: active.question,
+        interpretation: active.interpretation,
+        sql: active.sql,
+        result: active.result,
+      });
+    }
+  }
+
   function selectTurn(id: string) {
     setActiveId(id);
     setShowSql(false);
@@ -242,6 +265,35 @@ export function QueryConsole({
       .catch(() => {});
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // Rehydrates a persisted conversation on mount, but only if it ran against the
+  // same set of tables (signature match) — so loading a different dataset never
+  // shows stale results. Declared before the persist effect so its read of
+  // localStorage happens before the first save.
+  const didHydrate = useRef(false);
+  useEffect(() => {
+    didHydrate.current = true;
+    if (!persist) return;
+    const saved = loadTurns();
+    if (saved && saved.sig === persistSig && saved.turns.length > 0) {
+      const restored = saved.turns as Turn[];
+      // Deferred so the state updates land outside the effect body (same reason
+      // as the auto-run effect): synchronous setState in an effect is flagged.
+      setTimeout(() => {
+        setTurns(restored);
+        setActiveId(restored[restored.length - 1].id);
+      }, 0);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Persists the conversation on every change (after hydration, so we never
+  // clobber saved turns with the initial empty state before restoring them).
+  useEffect(() => {
+    if (!persist || !didHydrate.current) return;
+    saveTurns({ sig: persistSig, turns });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [turns]);
 
   async function handleShare() {
     if (!active) return;
@@ -408,6 +460,21 @@ export function QueryConsole({
                 >
                   <Lightbulb className="size-3.5" />
                   {explaining ? "Explicando…" : "Explicar"}
+                </button>
+                <button
+                  type="button"
+                  onClick={togglePin}
+                  className="inline-flex items-center gap-1 text-xs text-muted-foreground transition-colors hover:text-foreground"
+                >
+                  {dashboard.some((c) => c.id === active.id) ? (
+                    <>
+                      <Check className="size-3.5 text-primary" /> En el tablero
+                    </>
+                  ) : (
+                    <>
+                      <Pin className="size-3.5" /> Fijar al tablero
+                    </>
+                  )}
                 </button>
                 <button
                   type="button"
