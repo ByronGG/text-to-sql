@@ -22,14 +22,18 @@ function errorMessage(err: unknown): string {
 
 /**
  * Runs one eval case end-to-end through the real pipeline (ask the model →
- * validate + execute the SQL) and scores it. Single attempt, no
- * auto-correction retry — this measures single-shot generation accuracy and
- * keeps the run to exactly one API request per case (mindful of the rate limit).
+ * validate + execute the SQL) and scores it against `tables` (one table for the
+ * single-table battery, several for the multi-table/JOIN battery). Single
+ * attempt, no auto-correction retry — this measures single-shot generation
+ * accuracy and keeps the run to exactly one API request per case.
  */
-export async function runEvalCase(evalCase: EvalCase, schema: TableSchema): Promise<CaseOutcome> {
+export async function runEvalCase(
+  evalCase: EvalCase,
+  tables: TableSchema[],
+): Promise<CaseOutcome> {
   let response;
   try {
-    response = await askQuestion({ question: evalCase.question, tables: [schema] });
+    response = await askQuestion({ question: evalCase.question, tables });
   } catch (err) {
     return { status: "error", detail: `La API falló: ${errorMessage(err)}` };
   }
@@ -54,7 +58,7 @@ export async function runEvalCase(evalCase: EvalCase, schema: TableSchema): Prom
 
   let result: QueryResult;
   try {
-    result = await runQuery(sql, [schema.tableName]);
+    result = await runQuery(sql, tables.map((t) => t.tableName));
   } catch (err) {
     return { status: "error", detail: `El SQL no se pudo ejecutar: ${errorMessage(err)}`, sql };
   }

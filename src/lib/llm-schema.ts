@@ -13,6 +13,8 @@ const TableSchemaInput = z.object({
   sampleRows: z.array(z.record(z.string(), z.unknown())),
 });
 
+const TablesInput = z.array(TableSchemaInput).min(1).max(8);
+
 const ChatMessageSchema = z.object({
   role: z.enum(["user", "assistant"]),
   content: z.string(),
@@ -21,7 +23,7 @@ const ChatMessageSchema = z.object({
 export const SqlRequestSchema = z.object({
   question: z.string().min(1).max(2000),
   // One or more loaded tables. Multiple tables enable cross-table joins.
-  tables: z.array(TableSchemaInput).min(1).max(8),
+  tables: TablesInput,
   history: z.array(ChatMessageSchema).max(20).optional(),
   failedSql: z
     .object({
@@ -32,6 +34,19 @@ export const SqlRequestSchema = z.object({
 });
 
 export type SqlRequest = z.infer<typeof SqlRequestSchema>;
+
+// Suggested-questions endpoint: schema in, a few natural-language questions out.
+export const SuggestRequestSchema = z.object({ tables: TablesInput });
+export const SuggestResponseSchema = z.object({
+  preguntas: z.array(z.string().min(1)).min(1).max(6),
+});
+
+// Explain endpoint: a SQL query + schema in, a natural-language explanation out.
+export const ExplainRequestSchema = z.object({
+  sql: z.string().min(1).max(10_000),
+  tables: TablesInput,
+});
+export const ExplainResponseSchema = z.object({ explicacion: z.string().min(1) });
 
 // The LLM must answer with exactly one of these two shapes: a ready-to-run
 // query, or a clarifying question when the request is too ambiguous to guess

@@ -68,7 +68,8 @@ function joinHints(tables: TableInput[]): string {
   ].join("\n");
 }
 
-function schemaToText(tables: TableInput[]): string {
+/** Renders all tables (columns, samples, join hints) as prompt context. */
+export function describeTables(tables: TableInput[]): string {
   return tables.map(tableToText).join("\n\n") + joinHints(tables);
 }
 
@@ -81,7 +82,7 @@ export function buildMessages(request: SqlRequest): ChatMessage[] {
   const messages: ChatMessage[] = [
     {
       role: "system",
-      content: `${SYSTEM_PROMPT}\n\nEsquema de los datos disponibles:\n${schemaToText(request.tables)}`,
+      content: `${SYSTEM_PROMPT}\n\nEsquema de los datos disponibles:\n${describeTables(request.tables)}`,
     },
     ...(request.history ?? []),
   ];
@@ -101,4 +102,27 @@ export function buildMessages(request: SqlRequest): ChatMessage[] {
   }
 
   return messages;
+}
+
+const SUGGEST_PROMPT = `Eres un analista de datos. A partir del esquema, propón preguntas de negocio útiles e interesantes que se puedan responder ÚNICAMENTE con estos datos. Deben ser concretas, variadas (una agregación, una comparación, un ranking/top, y si hay fechas una tendencia) y estar en español, cortas y en lenguaje natural (sin SQL). No inventes columnas ni tablas. Si hay varias tablas, incluye al menos una que las combine.
+
+Responde ÚNICAMENTE con un objeto JSON válido, sin texto adicional, con entre 3 y 5 preguntas:
+{"preguntas": ["...", "..."]}`;
+
+export function buildSuggestMessages(tables: TableInput[]): ChatMessage[] {
+  return [
+    { role: "system", content: `${SUGGEST_PROMPT}\n\nEsquema:\n${describeTables(tables)}` },
+  ];
+}
+
+const EXPLAIN_PROMPT = `Eres un experto en SQL que explica consultas a personas de negocio. Explica en español, en 2 a 4 frases claras y sin jerga innecesaria, qué hace la consulta y qué resultado devuelve, en términos del negocio (no repitas el SQL línea por línea).
+
+Responde ÚNICAMENTE con un objeto JSON válido, sin texto adicional:
+{"explicacion": "..."}`;
+
+export function buildExplainMessages(sql: string, tables: TableInput[]): ChatMessage[] {
+  return [
+    { role: "system", content: `${EXPLAIN_PROMPT}\n\nEsquema:\n${describeTables(tables)}` },
+    { role: "user", content: `Explica esta consulta SQL:\n${sql}` },
+  ];
 }

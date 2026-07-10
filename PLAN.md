@@ -216,17 +216,32 @@ demostrable por sí solo.
   (lint + typecheck + tests en cada push/PR; Vercel cubre el build).
   De paso, los tests encontraron un bug real: `validateSelectOnly` devolvía el
   statement con espacio final (`"SELECT 1 "`) pese a documentar que venía trimmed.
-- [ ] **Paso 2 · Eval multi-tabla** — segundo dataset de ejemplo empaquetado (el de
-  ferretería: ventas/productos/clientes/proveedores) y ~8-10 casos de eval que exigen
-  JOIN (dos y tres tablas), midiendo por separado precisión single-table vs multi-table.
-  Es la métrica que valida el Paso 2 de v3 y protege el prompt de regresiones futuras.
-- [ ] **Paso 3 · UX de consulta** — tres mejoras pequeñas con mucho efecto:
-  (a) **preguntas sugeridas** al cargar datos (generadas por el LLM a partir del
-  esquema, 1 llamada cacheada — el usuario nuevo no sabe qué preguntar);
-  (b) **SQL editable**: editar el SQL generado y re-ejecutarlo (camino power-user;
-  pasa por el mismo guard);
-  (c) **"explica esta consulta"**: botón en el SQL que pide al modelo la explicación
-  en lenguaje natural (el camino inverso, idea de banca desde v2).
+- [x] **Paso 2 · Eval multi-tabla** — dataset de ferretería empaquetado en
+  `public/sample-data/ferreteria/` (proveedores·clientes·productos·ventas) y **9 casos
+  JOIN** (`JOIN_EVAL_CASES`) de 2 y 3 tablas. `/eval` ahora corre **dos baterías** con
+  precisión separada (una tabla / multi-tabla), cada una con su botón "Correr" y un
+  "Correr todo" (25 casos). `loadFerreteriaSample()` carga las 4 tablas a nombres fijos;
+  `runEvalCase` pasó de una tabla a `tables[]`. Valores esperados computados
+  independientemente de los CSV. Verificado vía API: 8/9 casos generan SQL multi-tabla
+  correcto que solo referencia tablas registradas. Construir el eval **destapó
+  ambigüedades reales de diseño** (dinero vs unidades; id vs nombre; pivote 1-fila vs
+  2-filas agrupadas) → reformulé las preguntas para que "correcto" quede bien definido.
+  Añadido `eval-cases.test.ts` (ids únicos, valores distintos por caso exact para la
+  bijección greedy). Total: 69 tests.
+- [x] **Paso 3 · UX de consulta** — tres mejoras:
+  (a) **preguntas sugeridas** (`/api/suggest`): al cargar datos, chips clicables
+  generados por el LLM del esquema (agregación/comparación/ranking/tendencia), cacheados
+  por esquema — un clic ejecuta la pregunta;
+  (b) **SQL editable**: "Editar y re-ejecutar" abre un textarea con el SQL generado;
+  al ejecutar pasa por el mismo `runSql` (guard + ejecutor) y se agrega como turno nuevo;
+  (c) **"Explicar"** (`/api/explain`): el modelo describe la consulta en lenguaje
+  natural (el camino inverso). De paso se extrajo `api-groq.ts` (resolución de key +
+  rate limit + llamada a Groq + errores) para no duplicar en las 3 rutas LLM, y
+  `llm-client.ts` (`postLlm` con header BYOK) reusado por ask-question/suggest/explain.
+  Verificado vía API: suggest devuelve preguntas variadas (cache HIT en repetición),
+  explain da texto claro, `/api/sql` intacto tras el refactor. UI verificada por
+  build/types/lint/69 tests (la corrida visual quedó pendiente: el dev server local
+  ocupa el puerto y bloquea el MCP de preview).
 - [ ] **Paso 4 · Persistencia local de sesión** — la conversación (turnos, SQL,
   resultados) y las tablas cargadas sobreviven un refresh vía `localStorage` +
   re-registro en DuckDB. Hoy un F5 pierde todo el hilo; para demos largas duele.

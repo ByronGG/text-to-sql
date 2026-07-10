@@ -180,3 +180,105 @@ export const EVAL_CASES: EvalCase[] = [
     note: "Sin métrica ni entidad ('mejores' qué, según qué): debería pedir aclaración.",
   },
 ];
+
+// Multi-table battery, run against the bundled ferretería dataset
+// (public/sample-data/ferreteria: proveedores, clientes, productos, ventas).
+// Every case needs a JOIN — the model can only produce these numbers by
+// relating tables through the shared *_id columns. Expected values were
+// computed directly from the CSVs. This is the metric that guards the
+// multi-file/JOIN feature (v3 · paso 2) against prompt regressions.
+export const JOIN_EVAL_CASES: EvalCase[] = [
+  // — 2 tablas: ventas + productos —
+  {
+    id: "j-ingresos-categoria",
+    category: "JOIN · 2 tablas",
+    question: "¿Cuánto se ha vendido en dinero por categoría de producto?",
+    expected: {
+      kind: "result",
+      rows: [
+        { monto: 151242 }, { monto: 52257 }, { monto: 41780 }, { monto: 39475 },
+        { monto: 24014 }, { monto: 22311 }, { monto: 14495 },
+      ],
+    },
+    note: "ventas ⋈ productos, SUM(precio_total) GROUP BY categoria (7 categorías).",
+  },
+  {
+    id: "j-unidades-categoria",
+    category: "JOIN · 2 tablas",
+    question: "¿Cuántas unidades se vendieron por categoría de producto?",
+    expected: {
+      kind: "result",
+      rows: [
+        { n: 762 }, { n: 540 }, { n: 400 }, { n: 345 }, { n: 226 }, { n: 185 }, { n: 184 },
+      ],
+    },
+    note: "ventas ⋈ productos, SUM(cantidad) GROUP BY categoria.",
+  },
+  {
+    id: "j-top-producto",
+    category: "JOIN · 2 tablas",
+    question: "¿Qué producto ha generado más ingresos en total?",
+    expected: { kind: "result", mode: "prefix", rows: [{ producto: "Pinzas de electricista" }] },
+    note: "ventas ⋈ productos, SUM(precio_total) GROUP BY producto ORDER BY DESC → Pinzas de electricista (36,575).",
+  },
+  // — 2 tablas: ventas + clientes —
+  {
+    id: "j-ingresos-tipo-cliente",
+    category: "JOIN · 2 tablas",
+    // "por tipo de cliente" nudges toward GROUP BY tipo (two rows) rather than a
+    // one-row CASE pivot, which our row-count check would otherwise reject.
+    question: "¿Cuánto se ha vendido en total por tipo de cliente (mayorista o minorista)?",
+    expected: { kind: "result", rows: [{ monto: 287623 }, { monto: 57951 }] },
+    note: "ventas ⋈ clientes, SUM(precio_total) GROUP BY tipo: Mayorista 287,623 · Minorista 57,951.",
+  },
+  {
+    id: "j-ciudad-cliente-top",
+    category: "JOIN · 2 tablas",
+    // "más ingresos" pins the metric to money (precio_total), not units.
+    question: "¿Qué ciudad de clientes genera más ingresos?",
+    expected: { kind: "result", mode: "prefix", rows: [{ ciudad: "Guadalajara" }] },
+    note: "ventas ⋈ clientes, SUM(precio_total) GROUP BY ciudad ORDER BY DESC → Guadalajara (92,678).",
+  },
+  // — 2 tablas: productos + proveedores —
+  {
+    id: "j-productos-proveedor-ciudad",
+    category: "JOIN · 2 tablas",
+    // Filtering by proveedores.ciudad (which only exists in proveedores) forces
+    // the join — a clean, unambiguous 2-table case.
+    question: "¿Cuántos productos en total ofrecen los proveedores ubicados en Monterrey?",
+    expected: { kind: "result", rows: [{ n: 16 }] },
+    note: "productos ⋈ proveedores, COUNT(*) WHERE proveedores.ciudad = 'Monterrey' = 16 (Herramientas MX + Eléctrica del Norte).",
+  },
+  // — 3 tablas —
+  {
+    id: "j-proveedor-ingresos",
+    category: "JOIN · 3 tablas",
+    // Kept terse ("¿Qué proveedor…?"): it yields a clean 3-way join returning
+    // the name; the wordier "¿nombre del proveedor…?" pushed the model toward a
+    // buggy scalar-subquery instead.
+    question: "¿Qué proveedor genera más ingresos por los productos que se le venden?",
+    expected: { kind: "result", mode: "prefix", rows: [{ proveedor: "Herramientas MX" }] },
+    note: "ventas ⋈ productos ⋈ proveedores, SUM(precio_total) GROUP BY proveedor ORDER BY DESC → Herramientas MX (151,242).",
+  },
+  {
+    id: "j-ingresos-ciudad-proveedor",
+    category: "JOIN · 3 tablas",
+    question: "¿Cuánto se vendió según la ciudad del proveedor?",
+    expected: {
+      kind: "result",
+      rows: [
+        { monto: 203499 }, { monto: 41780 }, { monto: 39475 },
+        { monto: 36806 }, { monto: 20269 }, { monto: 3745 },
+      ],
+    },
+    note: "ventas ⋈ productos ⋈ proveedores, SUM(precio_total) GROUP BY proveedor.ciudad (6 ciudades).",
+  },
+  {
+    id: "j-categoria-mayoristas",
+    category: "JOIN · 3 tablas",
+    // "gastan más dinero" pins the metric to precio_total, not units.
+    question: "¿En qué categoría de producto gastan más dinero los clientes mayoristas?",
+    expected: { kind: "result", mode: "prefix", rows: [{ categoria: "Herramientas" }] },
+    note: "ventas ⋈ productos ⋈ clientes, WHERE tipo='Mayorista', SUM(precio_total) GROUP BY categoria ORDER BY DESC → Herramientas (123,449).",
+  },
+];

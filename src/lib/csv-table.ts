@@ -137,3 +137,20 @@ export async function loadSampleTable(
   const schema = await loadCsvAsTable(file, tableName);
   return { schema, fileName: SAMPLE_CSV_NAME };
 }
+
+// Bundled relational sample (a hardware-store warehouse) used by the
+// multi-table eval battery. Loaded into fixed table names so the eval cases can
+// reference them; each load drops+replaces its own table, leaving others alone.
+export const FERRETERIA_TABLE_NAMES = ["proveedores", "clientes", "productos", "ventas"] as const;
+
+/** Loads the 4 ferretería tables (fixed names) for cross-table JOIN queries. */
+export async function loadFerreteriaSample(): Promise<TableSchema[]> {
+  const schemas: TableSchema[] = [];
+  for (const name of FERRETERIA_TABLE_NAMES) {
+    const response = await fetch(`/sample-data/ferreteria/${name}.csv`);
+    const blob = await response.blob();
+    const file = new File([blob], `${name}.csv`, { type: "text/csv" });
+    schemas.push(await loadCsvAsTable(file, name));
+  }
+  return schemas;
+}

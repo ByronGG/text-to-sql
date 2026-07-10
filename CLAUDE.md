@@ -35,7 +35,7 @@ A text-to-SQL tool: the user provides data, asks a question in natural language,
 - **Archivo (default, browser-local):** CSV/Excel is queried in the browser with DuckDB-WASM; data never leaves the browser. Only the schema is sent to the model.
 - **Postgres (server):** the user connects a database; introspection and query execution run server-side against it (data does leave the browser — a read-only user is recommended).
 
-SQL generation is a thin server proxy to Groq (`/api/sql`) so the API key stays server-side; everything data-related in Archivo mode is client (`"use client"`).
+SQL generation is a thin server proxy to Groq (`/api/sql`) so the API key stays server-side; everything data-related in Archivo mode is client (`"use client"`). Two sibling routes reuse the same Groq plumbing (`src/lib/api-groq.ts`): `/api/suggest` (schema → suggested questions) and `/api/explain` (SQL → plain-language explanation).
 
 Data flow (Archivo mode):
 1. `src/components/csv-upload.tsx` — drag/drop or file-picker (or a bundled sample from `public/sample-data/`), derives a unique table name and hands the `File` to `loadCsvAsTable`.

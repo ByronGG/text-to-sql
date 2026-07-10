@@ -1,0 +1,46 @@
+producto_id,nombre,categoria,proveedor_id,precio_unitario,stock,unidad
+1,Martillo de uña 16oz,Herramientas,2,189,45,pieza
+2,"Desarmador plano 6""",Herramientas,2,59,120,pieza
+3,Desarmador de cruz,Herramientas,2,62,110,pieza
+4,"Llave ajustable 10""",Herramientas,2,245,30,pieza
+5,Pinzas de electricista,Herramientas,2,175,40,pieza
+6,"Taladro percutor 1/2""",Herramientas,2,1450,15,pieza
+7,Juego de brocas 13 pzas,Herramientas,2,320,25,caja
+8,Cinta métrica 5m,Herramientas,2,85,90,pieza
+9,"Nivel de burbuja 24""",Herramientas,2,210,22,pieza
+10,"Serrucho 20""",Herramientas,2,168,28,pieza
+11,"Tornillo pijas 1"" (100pz)",Tornillería,4,45,200,caja
+12,"Tornillo pijas 2"" (100pz)",Tornillería,4,68,180,caja
+13,"Clavo 2.5"" (1kg)",Tornillería,4,38,150,kg
+14,"Clavo 3"" (1kg)",Tornillería,4,40,140,kg
+15,Taquete plástico 1/4 (50pz),Tornillería,4,32,160,caja
+16,Tuerca hexagonal 1/4 (100pz),Tornillería,4,55,130,caja
+17,Rondana plana 1/4 (100pz),Tornillería,4,28,170,caja
+18,Pintura vinílica blanca 19L,Pintura,3,890,40,cubeta
+19,Pintura vinílica azul 4L,Pintura,3,245,55,litro
+20,Esmalte negro 1L,Pintura,3,98,70,litro
+21,Thinner estándar 1L,Pintura,3,52,85,litro
+22,"Brocha 3""",Pintura,3,45,100,pieza
+23,"Rodillo 9"" con extensión",Pintura,3,120,60,pieza
+24,Lija agua #120 (10pz),Pintura,3,60,90,caja
+25,"Tubo PVC 1/2"" x 6m",Plomería,5,78,120,pieza
+26,"Codo PVC 1/2""",Plomería,5,12,300,pieza
+27,"Llave de paso 1/2""",Plomería,5,145,50,pieza
+28,Cinta teflón,Plomería,5,15,250,pieza
+29,Coladera de piso,Plomería,5,88,45,pieza
+30,Manguera jardín 15m,Plomería,5,320,30,pieza
+31,Cable THW #12 (100m),Eléctrico,6,780,35,rollo
+32,Apagador sencillo,Eléctrico,6,42,140,pieza
+33,Contacto doble,Eléctrico,6,55,130,pieza
+34,Foco LED 9W,Eléctrico,6,38,200,pieza
+35,Cinta de aislar,Eléctrico,6,18,220,pieza
+36,Pastilla termomagnética 20A,Eléctrico,6,165,40,pieza
+37,Cemento gris 50kg,Material,1,215,80,bulto
+38,Varilla 3/8 x 12m,Material,1,178,60,pieza
+39,Alambre recocido (1kg),Material,1,42,100,kg
+40,Triplay 18mm 1.22x2.44,Material,7,620,25,pieza
+41,"Tabla de pino 1""",Material,7,145,40,pieza
+42,Guantes de carnaza,Seguridad,8,68,90,pieza
+43,Lentes de seguridad,Seguridad,8,45,110,pieza
+44,Casco de obra,Seguridad,8,135,50,pieza
+45,Cubrebocas N95 (10pz),Seguridad,8,95,75,caja

@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { AlertCircle, Check, ChevronDown, ChevronRight, Share2 } from "lucide-react";
+import { AlertCircle, Check, ChevronDown, ChevronRight, Lightbulb, Pencil, Share2, Sparkles } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -19,6 +19,7 @@ import { QueryResults } from "@/components/query-results";
 import { SqlCodeBlock } from "@/components/sql-code-block";
 import { askQuestion } from "@/lib/ask-question";
 import type { TableSchema } from "@/lib/csv-table";
+import { fetchExplanation, fetchSuggestions } from "@/lib/llm-client";
 import { runQuery, type QueryResult } from "@/lib/run-query";
 import { cn } from "@/lib/utils";
 
@@ -78,6 +79,16 @@ export function QueryConsole({
   const [clarificationAnswer, setClarificationAnswer] = useState("");
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [shareCopied, setShareCopied] = useState(false);
+  // Suggested questions (LLM-generated from the schema, fetched once).
+  const [suggestions, setSuggestions] = useState<string[]>([]);
+  // Manual SQL editing on the active result.
+  const [editingSql, setEditingSql] = useState(false);
+  const [sqlDraft, setSqlDraft] = useState("");
+  const [runningEdit, setRunningEdit] = useState(false);
+  const [editError, setEditError] = useState<string | null>(null);
+  // Plain-language explanation of the active turn's SQL, keyed by turn.
+  const [explanation, setExplanation] = useState<{ turnId: string; text: string } | null>(null);
+  const [explaining, setExplaining] = useState(false);
 
   const active = turns.find((t) => t.id === activeId) ?? null;
 
@@ -135,6 +146,7 @@ export function QueryConsole({
       setTurns((prev) => [...prev, turn]);
       setActiveId(turn.id);
       setShowSql(false);
+      setEditingSql(false);
       setQuestion("");
       setStatus("idle");
     } catch (err) {
@@ -148,12 +160,62 @@ export function QueryConsole({
     }
   }
 
-  async function handleAsk() {
-    const text = question.trim();
+  async function handleAsk(preset?: string) {
+    const text = (preset ?? question).trim();
     if (!text) return;
+    if (preset) setQuestion(preset);
     setStatus("loading");
     setErrorMessage(null);
     await runAttempts(text, text, buildHistory(), undefined, 0);
+  }
+
+  // Runs the user's hand-edited SQL directly (skipping the model) through the
+  // same guard + executor, adding it as a new turn.
+  async function runEditedSql() {
+    const sql = sqlDraft.trim();
+    if (!sql || !active) return;
+    setRunningEdit(true);
+    setEditError(null);
+    try {
+      const result = await runSql(sql, allowedTableNames);
+      const turn: Turn = {
+        id: crypto.randomUUID(),
+        question: `${active.question} · SQL editado`,
+        interpretation: "Consulta editada manualmente.",
+        sql,
+        result,
+      };
+      setTurns((prev) => [...prev, turn]);
+      setActiveId(turn.id);
+      setEditingSql(false);
+      setShowSql(false);
+    } catch (err) {
+      setEditError(err instanceof Error ? err.message : "El SQL no se pudo ejecutar.");
+    } finally {
+      setRunningEdit(false);
+    }
+  }
+
+  async function handleExplain() {
+    if (!active) return;
+    setExplaining(true);
+    try {
+      const text = await fetchExplanation(active.sql, tables);
+      setExplanation({ turnId: active.id, text });
+    } catch (err) {
+      setExplanation({
+        turnId: active.id,
+        text: err instanceof Error ? err.message : "No se pudo explicar la consulta.",
+      });
+    } finally {
+      setExplaining(false);
+    }
+  }
+
+  function selectTurn(id: string) {
+    setActiveId(id);
+    setShowSql(false);
+    setEditingSql(false);
   }
 
   // Auto-runs a shared question once on mount. Deferred to a timeout so the
@@ -165,6 +227,19 @@ export function QueryConsole({
     if (!autoRun || !initialQuestion || didAutoRun.current) return;
     didAutoRun.current = true;
     setTimeout(() => void handleAsk(), 0);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Fetches suggested questions once on mount (unless a shared question is
+  // auto-running). The setState happens after an await, so it's not the
+  // synchronous set-state-in-effect the lint warns about.
+  const didFetchSuggestions = useRef(false);
+  useEffect(() => {
+    if (didFetchSuggestions.current || autoRun) return;
+    didFetchSuggestions.current = true;
+    fetchSuggestions(tables)
+      .then(setSuggestions)
+      .catch(() => {});
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -203,6 +278,9 @@ export function QueryConsole({
     setQuestion("");
     setStatus("idle");
     setErrorMessage(null);
+    setShowSql(false);
+    setEditingSql(false);
+    setExplanation(null);
   }
 
   const isLoading = status === "loading";
@@ -229,6 +307,26 @@ export function QueryConsole({
           </Button>
         </div>
 
+        {turns.length === 0 && !isLoading && suggestions.length > 0 && (
+          <div className="space-y-2">
+            <span className="inline-flex items-center gap-1.5 font-mono text-xs tracking-[0.15em] text-muted-foreground">
+              <Sparkles className="size-3.5 text-primary" /> PRUEBA CON
+            </span>
+            <div className="flex flex-wrap gap-2">
+              {suggestions.map((s) => (
+                <button
+                  key={s}
+                  type="button"
+                  onClick={() => void handleAsk(s)}
+                  className="rounded-full border border-border px-3 py-1 text-left text-xs text-muted-foreground transition-colors hover:border-primary/40 hover:bg-accent/40 hover:text-foreground"
+                >
+                  {s}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
         {turns.length > 0 && (
           <div className="space-y-2">
             <div className="flex items-center justify-between">
@@ -248,10 +346,7 @@ export function QueryConsole({
                 <button
                   key={turn.id}
                   type="button"
-                  onClick={() => {
-                    setActiveId(turn.id);
-                    setShowSql(false);
-                  }}
+                  onClick={() => selectTurn(turn.id)}
                   className={cn(
                     "flex items-baseline gap-2 truncate rounded-md px-2.5 py-1.5 text-left text-sm transition-colors",
                     turn.id === activeId
@@ -296,7 +391,7 @@ export function QueryConsole({
             <p className="text-sm">{active.interpretation}</p>
 
             <div>
-              <div className="flex items-center gap-4">
+              <div className="flex flex-wrap items-center gap-4">
                 <button
                   type="button"
                   onClick={() => setShowSql((v) => !v)}
@@ -304,6 +399,15 @@ export function QueryConsole({
                 >
                   {showSql ? <ChevronDown className="size-3.5" /> : <ChevronRight className="size-3.5" />}
                   {showSql ? "Ocultar SQL" : "Ver SQL generado"}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => void handleExplain()}
+                  disabled={explaining}
+                  className="inline-flex items-center gap-1 text-xs text-muted-foreground transition-colors hover:text-foreground disabled:opacity-60"
+                >
+                  <Lightbulb className="size-3.5" />
+                  {explaining ? "Explicando…" : "Explicar"}
                 </button>
                 <button
                   type="button"
@@ -321,7 +425,64 @@ export function QueryConsole({
                   )}
                 </button>
               </div>
-              {showSql && <div className="mt-2"><SqlCodeBlock sql={active.sql} /></div>}
+
+              {explanation?.turnId === active.id && (
+                <div className="mt-2 rounded-lg border border-primary/20 bg-accent/30 px-3 py-2 text-sm text-accent-foreground">
+                  {explanation.text}
+                </div>
+              )}
+
+              {showSql && (
+                <div className="mt-2 space-y-2">
+                  {editingSql ? (
+                    <>
+                      <textarea
+                        value={sqlDraft}
+                        onChange={(e) => setSqlDraft(e.target.value)}
+                        spellCheck={false}
+                        rows={Math.min(12, sqlDraft.split("\n").length + 1)}
+                        className="w-full resize-y rounded-md border border-input bg-muted/40 p-3 font-mono text-xs text-foreground focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 focus-visible:outline-none"
+                      />
+                      {editError && <p className="text-xs text-destructive">{editError}</p>}
+                      <div className="flex items-center gap-2">
+                        <Button
+                          type="button"
+                          size="sm"
+                          onClick={() => void runEditedSql()}
+                          disabled={runningEdit || !sqlDraft.trim()}
+                        >
+                          {runningEdit ? "Ejecutando…" : "Ejecutar SQL"}
+                        </Button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setEditingSql(false);
+                            setEditError(null);
+                          }}
+                          className="text-xs text-muted-foreground transition-colors hover:text-foreground"
+                        >
+                          Cancelar
+                        </button>
+                      </div>
+                    </>
+                  ) : (
+                    <>
+                      <SqlCodeBlock sql={active.sql} />
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setSqlDraft(active.sql);
+                          setEditError(null);
+                          setEditingSql(true);
+                        }}
+                        className="inline-flex items-center gap-1 text-xs text-muted-foreground transition-colors hover:text-foreground"
+                      >
+                        <Pencil className="size-3.5" /> Editar y re-ejecutar
+                      </button>
+                    </>
+                  )}
+                </div>
+              )}
             </div>
 
             <QueryResults result={active.result} fileNameBase="resultados" />

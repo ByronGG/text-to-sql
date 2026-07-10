@@ -7,18 +7,40 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { SqlCodeBlock } from "@/components/sql-code-block";
-import { loadSampleTable } from "@/lib/csv-table";
-import { EVAL_CASES } from "@/lib/eval-cases";
+import { loadFerreteriaSample, loadSampleTable, type TableSchema } from "@/lib/csv-table";
+import { EVAL_CASES, JOIN_EVAL_CASES, type EvalCase } from "@/lib/eval-cases";
 import { runEvalCase, type CaseOutcome, type CaseStatus } from "@/lib/run-eval";
 import { cn } from "@/lib/utils";
 
-type Phase = "idle" | "loading-data" | "running" | "done";
+interface Suite {
+  id: string;
+  label: string;
+  description: string;
+  cases: EvalCase[];
+  load: () => Promise<TableSchema[]>;
+}
 
-const STATUS_LABEL: Record<CaseStatus, string> = {
-  pass: "OK",
-  fail: "Falló",
-  error: "Error",
-};
+const SUITES: Suite[] = [
+  {
+    id: "single",
+    label: "Una tabla",
+    description: "Preguntas sobre el CSV de ventas de ejemplo: agregación, group by, filtros, top-N y ambigüedad.",
+    cases: EVAL_CASES,
+    load: async () => [(await loadSampleTable()).schema],
+  },
+  {
+    id: "join",
+    label: "Multi-tabla (JOINs)",
+    description: "Dataset relacional de una ferretería (proveedores · clientes · productos · ventas). Cada pregunta exige combinar 2 o 3 tablas.",
+    cases: JOIN_EVAL_CASES,
+    load: loadFerreteriaSample,
+  },
+];
+
+const TOTAL_CASES = SUITES.reduce((n, s) => n + s.cases.length, 0);
+const keyOf = (suiteId: string, caseId: string) => `${suiteId}:${caseId}`;
+
+const STATUS_LABEL: Record<CaseStatus, string> = { pass: "OK", fail: "Falló", error: "Error" };
 
 function StatusBadge({ status }: { status: CaseStatus }) {
   const className =
@@ -30,55 +52,99 @@ function StatusBadge({ status }: { status: CaseStatus }) {
   return <Badge className={cn("font-mono", className)}>{STATUS_LABEL[status]}</Badge>;
 }
 
+function Accuracy({ passed, completed }: { passed: number; completed: number }) {
+  const pct = completed ? Math.round((passed / completed) * 100) : 0;
+  return (
+    <div className="flex items-baseline gap-2 font-mono text-sm">
+      <span className="text-xl font-medium text-foreground">{pct}%</span>
+      <span className="text-muted-foreground">
+        {passed}/{completed}
+      </span>
+    </div>
+  );
+}
+
 export default function EvalPage() {
-  const [phase, setPhase] = useState<Phase>("idle");
   const [outcomes, setOutcomes] = useState<Record<string, CaseOutcome>>({});
-  const [runningId, setRunningId] = useState<string | null>(null);
+  const [runningKey, setRunningKey] = useState<string | null>(null);
+  const [loadingSuiteId, setLoadingSuiteId] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
   const [expanded, setExpanded] = useState<string | null>(null);
   const [fatalError, setFatalError] = useState<string | null>(null);
 
-  const summary = useMemo(() => {
+  const overall = useMemo(() => {
     const done = Object.values(outcomes);
-    const passed = done.filter((o) => o.status === "pass").length;
-    return {
-      passed,
-      total: EVAL_CASES.length,
-      completed: done.length,
-      accuracy: done.length ? Math.round((passed / done.length) * 100) : 0,
-    };
+    return { passed: done.filter((o) => o.status === "pass").length, completed: done.length };
   }, [outcomes]);
 
-  async function runAll() {
-    setPhase("loading-data");
-    setOutcomes({});
-    setFatalError(null);
-    setExpanded(null);
-
-    let schema;
-    try {
-      const loaded = await loadSampleTable();
-      schema = loaded.schema;
-    } catch (err) {
-      setFatalError(
-        `No se pudo cargar el dataset de ejemplo: ${err instanceof Error ? err.message : "error desconocido"}`,
-      );
-      setPhase("idle");
-      return;
-    }
-
-    setPhase("running");
-    // Sequential so progress is visible and we send exactly one API request at
-    // a time (the /api/sql rate limit is 20 requests per 10-minute window).
-    for (const evalCase of EVAL_CASES) {
-      setRunningId(evalCase.id);
-      const outcome = await runEvalCase(evalCase, schema);
-      setOutcomes((prev) => ({ ...prev, [evalCase.id]: outcome }));
-    }
-    setRunningId(null);
-    setPhase("done");
+  function suiteStats(suite: Suite) {
+    const done = suite.cases
+      .map((c) => outcomes[keyOf(suite.id, c.id)])
+      .filter((o): o is CaseOutcome => Boolean(o));
+    return { passed: done.filter((o) => o.status === "pass").length, completed: done.length };
   }
 
-  const isRunning = phase === "loading-data" || phase === "running";
+  async function executeSuite(suite: Suite) {
+    setLoadingSuiteId(suite.id);
+    let tables: TableSchema[];
+    try {
+      tables = await suite.load();
+    } catch (err) {
+      setFatalError(
+        `No se pudieron cargar las tablas de "${suite.label}": ${err instanceof Error ? err.message : "error desconocido"}`,
+      );
+      setLoadingSuiteId(null);
+      throw err;
+    }
+    setLoadingSuiteId(null);
+
+    // Sequential: one API request at a time so progress is visible and the
+    // shared rate limit isn't hit in a burst.
+    for (const evalCase of suite.cases) {
+      const key = keyOf(suite.id, evalCase.id);
+      setRunningKey(key);
+      const outcome = await runEvalCase(evalCase, tables);
+      setOutcomes((prev) => ({ ...prev, [key]: outcome }));
+    }
+    setRunningKey(null);
+  }
+
+  function clearSuite(suiteId: string) {
+    setOutcomes((prev) =>
+      Object.fromEntries(Object.entries(prev).filter(([k]) => !k.startsWith(`${suiteId}:`))),
+    );
+  }
+
+  async function runSuite(suite: Suite) {
+    setBusy(true);
+    setFatalError(null);
+    clearSuite(suite.id);
+    try {
+      await executeSuite(suite);
+    } catch {
+      // fatalError already set
+    } finally {
+      setBusy(false);
+      setRunningKey(null);
+      setLoadingSuiteId(null);
+    }
+  }
+
+  async function runAll() {
+    setBusy(true);
+    setFatalError(null);
+    setOutcomes({});
+    setExpanded(null);
+    try {
+      for (const suite of SUITES) await executeSuite(suite);
+    } catch {
+      // fatalError already set
+    } finally {
+      setBusy(false);
+      setRunningKey(null);
+      setLoadingSuiteId(null);
+    }
+  }
 
   return (
     <div className="min-h-screen bg-background">
@@ -94,37 +160,22 @@ export default function EvalPage() {
             Precisión de ejecución
           </h1>
           <p className="mt-2 max-w-lg text-muted-foreground">
-            Batería fija de {EVAL_CASES.length} preguntas sobre el CSV de ejemplo. Cada
-            una corre por el pipeline real (modelo → validación → DuckDB) y se compara el{" "}
-            <em>resultado</em> con el esperado, no el texto del SQL. Un intento por caso
-            (sin auto-corrección), así que consume {EVAL_CASES.length} de las 20
-            solicitudes del límite compartido por ventana —o ninguna si configuras tu
-            propia API key.
+            Dos baterías, {TOTAL_CASES} preguntas: {EVAL_CASES.length} sobre una tabla y{" "}
+            {JOIN_EVAL_CASES.length} multi-tabla que exigen JOINs. Cada una corre por el
+            pipeline real (modelo → validación → DuckDB) y se compara el <em>resultado</em>{" "}
+            con el esperado, no el texto del SQL. Un intento por caso, así que un full run
+            son {TOTAL_CASES} solicitudes —conviene tu propia API key, y con el cache
+            re-correr es gratis. También puedes correr cada batería por separado.
           </p>
           <div className="mt-8 h-px w-full bg-border" />
         </header>
 
-        <div className="mt-8 flex flex-col gap-6">
+        <div className="mt-8 flex flex-col gap-8">
           <div className="flex items-center gap-4">
-            <Button type="button" onClick={() => void runAll()} disabled={isRunning}>
-              {phase === "loading-data"
-                ? "Cargando datos…"
-                : phase === "running"
-                  ? `Corriendo… (${summary.completed}/${summary.total})`
-                  : phase === "done"
-                    ? "Volver a correr"
-                    : "Correr evaluación"}
+            <Button type="button" onClick={() => void runAll()} disabled={busy}>
+              {busy ? `Corriendo… (${overall.completed}/${TOTAL_CASES})` : "Correr todo"}
             </Button>
-            {(phase === "running" || phase === "done") && (
-              <div className="flex items-baseline gap-3 font-mono text-sm">
-                <span className="text-2xl font-medium text-foreground">
-                  {summary.accuracy}%
-                </span>
-                <span className="text-muted-foreground">
-                  {summary.passed}/{summary.completed} correctas
-                </span>
-              </div>
-            )}
+            {overall.completed > 0 && <Accuracy passed={overall.passed} completed={overall.completed} />}
           </div>
 
           {fatalError && (
@@ -133,81 +184,114 @@ export default function EvalPage() {
             </p>
           )}
 
-          <div className="flex flex-col divide-y divide-border rounded-lg border border-border">
-            {EVAL_CASES.map((evalCase) => {
-              const outcome = outcomes[evalCase.id];
-              const isCaseRunning = runningId === evalCase.id;
-              const isOpen = expanded === evalCase.id;
-              return (
-                <div key={evalCase.id} className="px-4 py-3">
-                  <button
-                    type="button"
-                    onClick={() => setExpanded(isOpen ? null : evalCase.id)}
-                    className="flex w-full items-start gap-3 text-left"
-                  >
-                    <span className="mt-0.5 shrink-0">
-                      {isOpen ? (
-                        <ChevronDown className="size-4 text-muted-foreground" />
-                      ) : (
-                        <ChevronRight className="size-4 text-muted-foreground" />
-                      )}
-                    </span>
-                    <span className="min-w-0 flex-1">
-                      <span className="flex items-center gap-2">
-                        <span className="font-mono text-[10px] uppercase tracking-wider text-muted-foreground">
-                          {evalCase.category}
-                        </span>
+          {SUITES.map((suite) => {
+            const stats = suiteStats(suite);
+            const isLoading = loadingSuiteId === suite.id;
+            return (
+              <section key={suite.id} className="space-y-3">
+                <div className="flex items-start justify-between gap-4">
+                  <div className="min-w-0">
+                    <div className="flex items-center gap-3">
+                      <h2 className="text-sm font-medium text-foreground">{suite.label}</h2>
+                      <span className="font-mono text-xs text-muted-foreground">
+                        {suite.cases.length} casos
                       </span>
-                      <span className="mt-0.5 block truncate text-sm text-foreground">
-                        {evalCase.question}
-                      </span>
-                    </span>
-                    <span className="shrink-0">
-                      {outcome ? (
-                        <StatusBadge status={outcome.status} />
-                      ) : isCaseRunning ? (
-                        <Badge variant="secondary" className="animate-pulse font-mono">
-                          …
-                        </Badge>
-                      ) : (
-                        <Badge variant="outline" className="font-mono text-muted-foreground">
-                          —
-                        </Badge>
+                      {stats.completed > 0 && (
+                        <Accuracy passed={stats.passed} completed={stats.completed} />
                       )}
-                    </span>
-                  </button>
-
-                  {isOpen && (
-                    <div className="mt-3 space-y-3 pl-7 text-sm">
-                      <p className="text-muted-foreground">
-                        <span className="font-medium text-foreground">Esperado:</span>{" "}
-                        {evalCase.note}
-                      </p>
-                      {outcome && (
-                        <p
-                          className={cn(
-                            outcome.status === "pass"
-                              ? "text-muted-foreground"
-                              : "text-foreground",
-                          )}
-                        >
-                          <span className="font-medium">Resultado:</span> {outcome.detail}
-                        </p>
-                      )}
-                      {outcome?.clarification && (
-                        <Card className="bg-muted/40">
-                          <CardContent className="py-3 text-sm text-muted-foreground">
-                            “{outcome.clarification}”
-                          </CardContent>
-                        </Card>
-                      )}
-                      {outcome?.sql && <SqlCodeBlock sql={outcome.sql} />}
                     </div>
-                  )}
+                    <p className="mt-1 text-sm text-muted-foreground">{suite.description}</p>
+                  </div>
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    onClick={() => void runSuite(suite)}
+                    disabled={busy}
+                    className="shrink-0"
+                  >
+                    {isLoading
+                      ? "Cargando…"
+                      : runningKey?.startsWith(`${suite.id}:`)
+                        ? `Corriendo… (${stats.completed}/${suite.cases.length})`
+                        : "Correr"}
+                  </Button>
                 </div>
-              );
-            })}
-          </div>
+
+                <div className="flex flex-col divide-y divide-border rounded-lg border border-border">
+                  {suite.cases.map((evalCase) => {
+                    const key = keyOf(suite.id, evalCase.id);
+                    const outcome = outcomes[key];
+                    const isCaseRunning = runningKey === key;
+                    const isOpen = expanded === key;
+                    return (
+                      <div key={key} className="px-4 py-3">
+                        <button
+                          type="button"
+                          onClick={() => setExpanded(isOpen ? null : key)}
+                          className="flex w-full items-start gap-3 text-left"
+                        >
+                          <span className="mt-0.5 shrink-0">
+                            {isOpen ? (
+                              <ChevronDown className="size-4 text-muted-foreground" />
+                            ) : (
+                              <ChevronRight className="size-4 text-muted-foreground" />
+                            )}
+                          </span>
+                          <span className="min-w-0 flex-1">
+                            <span className="font-mono text-[10px] uppercase tracking-wider text-muted-foreground">
+                              {evalCase.category}
+                            </span>
+                            <span className="mt-0.5 block truncate text-sm text-foreground">
+                              {evalCase.question}
+                            </span>
+                          </span>
+                          <span className="shrink-0">
+                            {outcome ? (
+                              <StatusBadge status={outcome.status} />
+                            ) : isCaseRunning ? (
+                              <Badge variant="secondary" className="animate-pulse font-mono">
+                                …
+                              </Badge>
+                            ) : (
+                              <Badge variant="outline" className="font-mono text-muted-foreground">
+                                —
+                              </Badge>
+                            )}
+                          </span>
+                        </button>
+
+                        {isOpen && (
+                          <div className="mt-3 space-y-3 pl-7 text-sm">
+                            <p className="text-muted-foreground">
+                              <span className="font-medium text-foreground">Esperado:</span>{" "}
+                              {evalCase.note}
+                            </p>
+                            {outcome && (
+                              <p
+                                className={cn(
+                                  outcome.status === "pass" ? "text-muted-foreground" : "text-foreground",
+                                )}
+                              >
+                                <span className="font-medium">Resultado:</span> {outcome.detail}
+                              </p>
+                            )}
+                            {outcome?.clarification && (
+                              <Card className="bg-muted/40">
+                                <CardContent className="py-3 text-sm text-muted-foreground">
+                                  “{outcome.clarification}”
+                                </CardContent>
+                              </Card>
+                            )}
+                            {outcome?.sql && <SqlCodeBlock sql={outcome.sql} />}
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              </section>
+            );
+          })}
         </div>
       </main>
     </div>
