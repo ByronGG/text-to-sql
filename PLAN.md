@@ -267,6 +267,11 @@ demostrable por sí solo.
 - [ ] **Paso 6 · Infra compartida (si hay tráfico real)** — mover rate limit y cache a
   Upstash Redis (free tier) para que sobrevivan cold starts y se compartan entre
   instancias; hoy son por-instancia y está documentado como limitación consciente.
+  **Diferido a propósito:** es infraestructura sin beneficio visible sin tráfico real;
+  no vale la pena para un portafolio hoy. Se retoma solo si el demo empieza a recibir uso.
+
+> **v4 cerrada** (pasos 1–5 completos; el 6 queda condicional). La app vive en
+> **askql.vercel.app**; README actualizado a v1–v4. Total de tests: **89**.
 
 ### Ideas sueltas (si sobra tiempo)
 - Streaming de la respuesta del LLM (mejora percepción de velocidad; el JSON
