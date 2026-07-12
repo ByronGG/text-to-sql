@@ -166,6 +166,33 @@ export function buildSuggestMessages(tables: TableInput[], lang: Lang = "es"): C
   ];
 }
 
+const FOLLOWUP_PROMPT: Record<Lang, string> = {
+  es: `Eres un analista de datos. El usuario acaba de ejecutar una consulta y quiere seguir explorando. A partir del esquema, su pregunta anterior y el SQL que la respondió, propón entre 2 y 3 preguntas de seguimiento que refinen o profundicen esa consulta: filtrar por un valor, cambiar o añadir una agrupación, desglosar por fecha, ordenar distinto, o comparar contra otro grupo o periodo. Deben poder responderse ÚNICAMENTE con estos datos, ser cortas y en lenguaje natural (sin SQL), estar en español y ser claramente distintas de la pregunta anterior. No inventes columnas ni tablas.
+
+Responde ÚNICAMENTE con un objeto JSON válido, sin texto adicional, con entre 2 y 3 preguntas:
+{"preguntas": ["...", "..."]}`,
+  en: `You are a data analyst. The user just ran a query and wants to keep exploring. From the schema, their previous question, and the SQL that answered it, propose 2 to 3 follow-up questions that refine or drill into that query: filter by a value, change or add a grouping, break it down by date, sort differently, or compare against another group or period. They must be answerable USING ONLY this data, short and in natural language (no SQL), in English, and clearly different from the previous question. Do not invent columns or tables.
+
+Respond ONLY with a valid JSON object, with no extra text, with between 2 and 3 questions:
+{"preguntas": ["...", "..."]}`,
+};
+
+export function buildFollowUpMessages(
+  question: string,
+  sql: string,
+  tables: TableInput[],
+  lang: Lang = "es",
+): ChatMessage[] {
+  const userContent =
+    lang === "en"
+      ? `Previous question: "${question}"\nSQL that answered it:\n${sql}`
+      : `Pregunta anterior: "${question}"\nSQL que la respondió:\n${sql}`;
+  return [
+    { role: "system", content: `${FOLLOWUP_PROMPT[lang]}\n\n${SCHEMA_LABEL[lang]}:\n${describeTables(tables)}` },
+    { role: "user", content: userContent },
+  ];
+}
+
 const EXPLAIN_PROMPT: Record<Lang, string> = {
   es: `Eres un experto en SQL que explica consultas a personas de negocio. Explica en español, en 2 a 4 frases claras y sin jerga innecesaria, qué hace la consulta y qué resultado devuelve, en términos del negocio (no repitas el SQL línea por línea).
 

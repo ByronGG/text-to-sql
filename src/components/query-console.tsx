@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { AlertCircle, Check, ChevronDown, ChevronRight, Lightbulb, Pencil, Pin, Share2, Sparkles } from "lucide-react";
+import { AlertCircle, Check, ChevronDown, ChevronRight, CornerDownRight, Lightbulb, Pencil, Pin, Share2, Sparkles } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -21,7 +21,7 @@ import { askQuestion } from "@/lib/ask-question";
 import type { TableSchema } from "@/lib/csv-table";
 import { pin, unpin, useDashboard } from "@/lib/dashboard-store";
 import { useLang, useT } from "@/lib/i18n";
-import { fetchExplanation, fetchSuggestions } from "@/lib/llm-client";
+import { fetchExplanation, fetchFollowUps, fetchSuggestions } from "@/lib/llm-client";
 import { runQuery, type QueryResult } from "@/lib/run-query";
 import { loadTurns, saveTurns, tablesSignature } from "@/lib/session-store";
 import { cn } from "@/lib/utils";
@@ -92,6 +92,9 @@ export function QueryConsole({
   const [shareCopied, setShareCopied] = useState(false);
   // Suggested questions (LLM-generated from the schema, fetched once).
   const [suggestions, setSuggestions] = useState<string[]>([]);
+  // Follow-up suggestions for the active turn (LLM-generated from its
+  // question + SQL), keyed by turn so stale ones never show on another turn.
+  const [followUps, setFollowUps] = useState<{ turnId: string; items: string[] } | null>(null);
   // Manual SQL editing on the active result.
   const [editingSql, setEditingSql] = useState(false);
   const [sqlDraft, setSqlDraft] = useState("");
@@ -268,6 +271,25 @@ export function QueryConsole({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [lang]);
 
+  // Fetches refining follow-up chips for the active turn (from its question +
+  // SQL), and refetches when the turn or language changes. The setState happens
+  // after an await; the cancelled flag drops a slow response that lands after
+  // the active turn already moved on.
+  useEffect(() => {
+    if (!active) return;
+    const turn = active;
+    let cancelled = false;
+    fetchFollowUps(tables, turn.question, turn.sql, lang)
+      .then((items) => {
+        if (!cancelled) setFollowUps({ turnId: turn.id, items });
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeId, lang]);
+
   // Rehydrates a persisted conversation on mount, but only if it ran against the
   // same set of tables (signature match) — so loading a different dataset never
   // shows stale results. Declared before the persist effect so its read of
@@ -336,6 +358,7 @@ export function QueryConsole({
     setShowSql(false);
     setEditingSql(false);
     setExplanation(null);
+    setFollowUps(null);
   }
 
   const isLoading = status === "loading";
@@ -556,6 +579,26 @@ export function QueryConsole({
             </div>
 
             <QueryResults result={active.result} fileNameBase={t.console.resultsFileBase} />
+
+            {followUps?.turnId === active.id && followUps.items.length > 0 && (
+              <div className="space-y-2">
+                <span className="inline-flex items-center gap-1.5 font-mono text-xs tracking-[0.15em] text-muted-foreground">
+                  <CornerDownRight className="size-3.5 text-primary" /> {t.console.followUpWith}
+                </span>
+                <div className="flex flex-wrap gap-2">
+                  {followUps.items.map((s) => (
+                    <button
+                      key={s}
+                      type="button"
+                      onClick={() => void handleAsk(s)}
+                      className="rounded-full border border-border px-3 py-1 text-left text-xs text-muted-foreground transition-colors hover:border-primary/40 hover:bg-accent/40 hover:text-foreground"
+                    >
+                      {s}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
         )}
       </CardContent>

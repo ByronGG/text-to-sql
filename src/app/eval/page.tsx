@@ -24,7 +24,7 @@ const SUITES: Suite[] = [
   {
     id: "single",
     label: "Una tabla",
-    description: "Preguntas sobre el CSV de ventas de ejemplo: agregación, group by, filtros, top-N y ambigüedad.",
+    description: "Preguntas sobre el CSV de ventas de ejemplo (229 filas, un año): agregación, cálculo de ganancia, group by, filtros, top-N y ambigüedad.",
     cases: EVAL_CASES,
     load: async () => [(await loadSampleTable()).schema],
   },

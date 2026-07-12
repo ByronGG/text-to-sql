@@ -48,6 +48,15 @@ export const SuggestResponseSchema = z.object({
   preguntas: z.array(z.string().min(1)).min(1).max(6),
 });
 
+// Follow-up endpoint: schema + the previous question and the SQL that answered
+// it in, a few refining follow-up questions out (same response shape as suggest).
+export const FollowUpRequestSchema = z.object({
+  tables: TablesInput,
+  question: z.string().min(1).max(2000),
+  sql: z.string().min(1).max(10_000),
+  lang: LangSchema.optional(),
+});
+
 // Explain endpoint: a SQL query + schema in, a natural-language explanation out.
 export const ExplainRequestSchema = z.object({
   sql: z.string().min(1).max(10_000),

@@ -23,6 +23,22 @@ export async function fetchSuggestions(tables: TableSchema[], lang: Lang = "es")
   return preguntas;
 }
 
+/** Asks the model for a few refining follow-up questions for the active turn. */
+export async function fetchFollowUps(
+  tables: TableSchema[],
+  question: string,
+  sql: string,
+  lang: Lang = "es",
+): Promise<string[]> {
+  const { preguntas } = await postLlm<{ preguntas: string[] }>("/api/follow-up", {
+    tables,
+    question,
+    sql,
+    lang,
+  });
+  return preguntas;
+}
+
 /** Asks the model to explain a SQL query in plain language. */
 export async function fetchExplanation(
   sql: string,

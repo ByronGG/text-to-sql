@@ -1,42 +1,230 @@
-fecha,cliente,ciudad,categoria,producto,unidades,monto
-2026-06-03,Constructora Lumen,Monterrey,Materiales,Cemento,120,18000
-2026-06-05,Grupo Aranda,CDMX,Electronica,Router WiFi,15,9750
-2026-06-10,Ferreteria del Norte,Monterrey,Materiales,Varilla,80,14400
-2026-06-14,Tecno Solutions,Guadalajara,Electronica,Laptop,6,72000
-2026-06-18,Constructora Lumen,Monterrey,Materiales,Pintura,40,6800
-2026-06-21,Distribuidora Vela,Puebla,Alimentos,Aceite,200,9000
-2026-06-25,Grupo Aranda,CDMX,Electronica,Monitor,10,15000
-2026-06-28,Comercial Rios,Queretaro,Alimentos,Harina,150,6750
-2026-07-02,Tecno Solutions,Guadalajara,Electronica,Teclado,25,6250
-2026-07-05,Constructora Lumen,Monterrey,Materiales,Cemento,100,15000
-2026-07-08,Ferreteria del Norte,Monterrey,Materiales,Tubo PVC,60,7200
-2026-07-11,Distribuidora Vela,Puebla,Alimentos,Azucar,180,7920
-2026-07-15,Grupo Aranda,CDMX,Electronica,Router WiFi,20,13000
-2026-07-18,Comercial Rios,Queretaro,Alimentos,Arroz,140,8400
-2026-07-22,Tecno Solutions,Guadalajara,Electronica,Laptop,4,48000
-2026-07-26,Constructora Lumen,Monterrey,Materiales,Varilla,90,16200
-2026-07-29,Distribuidora Vela,Puebla,Alimentos,Aceite,220,9900
-2026-08-01,Grupo Aranda,CDMX,Electronica,Laptop,8,96000
-2026-08-03,Constructora Lumen,Monterrey,Materiales,Cemento,150,22500
-2026-08-04,Ferreteria del Norte,Monterrey,Materiales,Pintura,50,8500
-2026-08-06,Tecno Solutions,Guadalajara,Electronica,Monitor,18,27000
-2026-08-08,Distribuidora Vela,Puebla,Alimentos,Harina,170,7650
-2026-08-10,Comercial Rios,Queretaro,Alimentos,Azucar,160,7040
-2026-08-12,Grupo Aranda,CDMX,Electronica,Router WiFi,30,19500
-2026-08-14,Constructora Lumen,Monterrey,Materiales,Varilla,110,19800
-2026-08-16,Tecno Solutions,Guadalajara,Electronica,Teclado,35,8750
-2026-08-18,Ferreteria del Norte,Monterrey,Materiales,Tubo PVC,70,8400
-2026-08-20,Distribuidora Vela,Puebla,Alimentos,Aceite,210,9450
-2026-08-22,Grupo Aranda,CDMX,Electronica,Laptop,5,60000
-2026-08-24,Comercial Rios,Queretaro,Alimentos,Arroz,130,7800
-2026-08-26,Constructora Lumen,Monterrey,Materiales,Cemento,140,21000
-2026-08-28,Tecno Solutions,Guadalajara,Electronica,Monitor,12,18000
-2026-08-30,Distribuidora Vela,Puebla,Alimentos,Azucar,190,8360
-2026-09-02,Grupo Aranda,CDMX,Electronica,Router WiFi,22,14300
-2026-09-05,Constructora Lumen,Monterrey,Materiales,Varilla,95,17100
-2026-09-08,Ferreteria del Norte,Monterrey,Materiales,Pintura,45,7650
-2026-09-11,Comercial Rios,Queretaro,Alimentos,Harina,155,6975
-2026-09-14,Tecno Solutions,Guadalajara,Electronica,Laptop,7,84000
-2026-09-17,Distribuidora Vela,Puebla,Alimentos,Aceite,195,8775
-2026-09-20,Grupo Aranda,CDMX,Electronica,Teclado,28,7000
-2026-09-23,Constructora Lumen,Monterrey,Materiales,Cemento,130,19500
+fecha,region,ciudad,cliente,vendedor,categoria,producto,metodo_pago,estado,unidades,precio_unitario,costo_unitario,monto
+2026-01-04,Norte,Monterrey,Ferreteria del Norte,Ana Torres,Materiales,Pintura,Tarjeta,Devuelta,48,170,120,8160
+2026-01-05,Occidente,Guadalajara,Tecno Solutions,Diego Ramos,Electronica,Teclado,Tarjeta,Completada,43,250,150,10750
+2026-01-06,Centro,Queretaro,Comercial Rios,Marta Solis,Alimentos,Azucar,Credito,Completada,154,44,29,6776
+2026-01-07,Occidente,Guadalajara,Tecno Solutions,Diego Ramos,Alimentos,Cafe,Efectivo,Completada,72,120,82,8640
+2026-01-09,Occidente,Guadalajara,Tecno Solutions,Diego Ramos,Electronica,Teclado,Tarjeta,Completada,24,250,150,6000
+2026-01-10,Sureste,Merida,Peninsular Trade,Sofia Lara,Alimentos,Arroz,Efectivo,Completada,147,60,40,8820
+2026-01-11,Occidente,Guadalajara,Tecno Solutions,Diego Ramos,Electronica,Teclado,Transferencia,Completada,26,250,150,6500
+2026-01-13,Occidente,Leon,Innova Bajio,Diego Ramos,Alimentos,Arroz,Tarjeta,Completada,125,60,40,7500
+2026-01-14,Norte,Monterrey,Ferreteria del Norte,Ana Torres,Materiales,Grava,Transferencia,Completada,160,90,55,14400
+2026-01-15,Norte,Monterrey,Constructora Lumen,Ana Torres,Electronica,Monitor,Efectivo,Devuelta,16,1500,1000,24000
+2026-01-16,Centro,Queretaro,Comercial Rios,Marta Solis,Alimentos,Aceite,Credito,Completada,199,45,30,8955
+2026-01-17,Sureste,Merida,Peninsular Trade,Sofia Lara,Alimentos,Arroz,Credito,Completada,143,60,40,8580
+2026-01-18,Centro,CDMX,Grupo Aranda,Luis Prado,Electronica,Teclado,Tarjeta,Completada,34,250,150,8500
+2026-01-19,Centro,Queretaro,Comercial Rios,Marta Solis,Alimentos,Arroz,Tarjeta,Pendiente,143,60,40,8580
+2026-01-20,Norte,Monterrey,Constructora Lumen,Ana Torres,Materiales,Cemento,Tarjeta,Completada,148,150,110,22200
+2026-01-21,Occidente,Leon,Innova Bajio,Diego Ramos,Materiales,Cemento,Credito,Completada,159,150,110,23850
+2026-01-22,Norte,Monterrey,Constructora Lumen,Ana Torres,Materiales,Grava,Transferencia,Completada,177,90,55,15930
+2026-01-27,Norte,Monterrey,Constructora Lumen,Ana Torres,Electronica,Disco SSD,Credito,Completada,10,900,620,9000
+2026-02-02,Centro,Queretaro,Comercial Rios,Marta Solis,Electronica,Laptop,Tarjeta,Pendiente,7,12000,9200,84000
+2026-02-03,Centro,CDMX,Corporativo Zenit,Luis Prado,Electronica,Monitor,Tarjeta,Completada,12,1500,1000,18000
+2026-02-04,Centro,CDMX,Corporativo Zenit,Luis Prado,Electronica,Router WiFi,Tarjeta,Pendiente,12,650,430,7800
+2026-02-05,Occidente,Leon,Innova Bajio,Diego Ramos,Materiales,Tubo PVC,Transferencia,Completada,51,120,80,6120
+2026-02-06,Sureste,Merida,Peninsular Trade,Sofia Lara,Alimentos,Cafe,Credito,Pendiente,72,120,82,8640
+2026-02-08,Occidente,Guadalajara,Tecno Solutions,Diego Ramos,Electronica,Laptop,Credito,Completada,5,12000,9200,60000
+2026-02-09,Centro,CDMX,Corporativo Zenit,Luis Prado,Electronica,Teclado,Credito,Completada,33,250,150,8250
+2026-02-10,Centro,CDMX,Corporativo Zenit,Luis Prado,Alimentos,Aceite,Tarjeta,Devuelta,215,45,30,9675
+2026-02-11,Centro,CDMX,Grupo Aranda,Luis Prado,Electronica,Disco SSD,Transferencia,Completada,25,900,620,22500
+2026-02-13,Occidente,Leon,Innova Bajio,Diego Ramos,Materiales,Pintura,Tarjeta,Completada,55,170,120,9350
+2026-02-14,Centro,CDMX,Grupo Aranda,Luis Prado,Materiales,Grava,Credito,Completada,102,90,55,9180
+2026-02-15,Sureste,Merida,Peninsular Trade,Sofia Lara,Electronica,Teclado,Transferencia,Completada,35,250,150,8750
+2026-02-16,Occidente,Leon,Innova Bajio,Diego Ramos,Materiales,Tubo PVC,Credito,Completada,65,120,80,7800
+2026-02-17,Sureste,Merida,Peninsular Trade,Sofia Lara,Alimentos,Harina,Tarjeta,Completada,149,45,29,6705
+2026-02-18,Centro,Puebla,Distribuidora Vela,Marta Solis,Alimentos,Harina,Efectivo,Completada,163,45,29,7335
+2026-02-20,Centro,Queretaro,Comercial Rios,Marta Solis,Alimentos,Aceite,Efectivo,Completada,185,45,30,8325
+2026-02-22,Centro,CDMX,Corporativo Zenit,Luis Prado,Materiales,Pintura,Transferencia,Devuelta,42,170,120,7140
+2026-02-23,Centro,Puebla,Distribuidora Vela,Marta Solis,Electronica,Laptop,Efectivo,Completada,9,12000,9200,108000
+2026-02-25,Occidente,Guadalajara,Tecno Solutions,Diego Ramos,Electronica,Laptop,Credito,Completada,5,12000,9200,60000
+2026-02-27,Centro,Queretaro,Comercial Rios,Marta Solis,Alimentos,Arroz,Tarjeta,Completada,159,60,40,9540
+2026-03-02,Centro,CDMX,Grupo Aranda,Luis Prado,Electronica,Disco SSD,Efectivo,Completada,15,900,620,13500
+2026-03-03,Norte,Monterrey,Constructora Lumen,Ana Torres,Materiales,Grava,Tarjeta,Completada,138,90,55,12420
+2026-03-05,Sureste,Merida,Peninsular Trade,Sofia Lara,Alimentos,Azucar,Efectivo,Completada,150,44,29,6600
+2026-03-06,Centro,Puebla,Distribuidora Vela,Marta Solis,Materiales,Grava,Efectivo,Completada,132,90,55,11880
+2026-03-08,Centro,Queretaro,Comercial Rios,Marta Solis,Alimentos,Harina,Transferencia,Completada,151,45,29,6795
+2026-03-09,Sureste,Merida,Peninsular Trade,Sofia Lara,Alimentos,Arroz,Tarjeta,Completada,158,60,40,9480
+2026-03-10,Occidente,Leon,Innova Bajio,Diego Ramos,Materiales,Grava,Tarjeta,Completada,183,90,55,16470
+2026-03-12,Occidente,Guadalajara,Tecno Solutions,Diego Ramos,Electronica,Disco SSD,Tarjeta,Completada,21,900,620,18900
+2026-03-13,Norte,Monterrey,Ferreteria del Norte,Ana Torres,Alimentos,Harina,Credito,Completada,140,45,29,6300
+2026-03-14,Sureste,Merida,Peninsular Trade,Sofia Lara,Materiales,Varilla,Tarjeta,Completada,71,180,130,12780
+2026-03-20,Centro,Queretaro,Comercial Rios,Marta Solis,Alimentos,Arroz,Credito,Pendiente,147,60,40,8820
+2026-03-21,Occidente,Leon,Innova Bajio,Diego Ramos,Materiales,Cemento,Transferencia,Completada,109,150,110,16350
+2026-03-22,Occidente,Leon,Innova Bajio,Diego Ramos,Alimentos,Arroz,Efectivo,Pendiente,127,60,40,7620
+2026-03-23,Norte,Saltillo,Aceros Coahuila,Ana Torres,Materiales,Varilla,Credito,Completada,78,180,130,14040
+2026-03-24,Norte,Monterrey,Constructora Lumen,Ana Torres,Materiales,Grava,Transferencia,Completada,120,90,55,10800
+2026-03-26,Sureste,Merida,Peninsular Trade,Sofia Lara,Alimentos,Arroz,Credito,Completada,131,60,40,7860
+2026-03-27,Occidente,Guadalajara,Tecno Solutions,Diego Ramos,Electronica,Laptop,Credito,Completada,5,12000,9200,60000
+2026-04-03,Centro,Queretaro,Comercial Rios,Marta Solis,Alimentos,Aceite,Credito,Completada,187,45,30,8415
+2026-04-05,Norte,Monterrey,Constructora Lumen,Ana Torres,Materiales,Pintura,Transferencia,Completada,40,170,120,6800
+2026-04-06,Occidente,Leon,Innova Bajio,Diego Ramos,Materiales,Grava,Tarjeta,Completada,136,90,55,12240
+2026-04-07,Occidente,Guadalajara,Tecno Solutions,Diego Ramos,Electronica,Teclado,Transferencia,Completada,28,250,150,7000
+2026-04-09,Norte,Monterrey,Constructora Lumen,Ana Torres,Materiales,Varilla,Efectivo,Completada,80,180,130,14400
+2026-04-11,Norte,Monterrey,Ferreteria del Norte,Ana Torres,Materiales,Cemento,Credito,Completada,115,150,110,17250
+2026-04-12,Occidente,Guadalajara,Tecno Solutions,Diego Ramos,Electronica,Router WiFi,Efectivo,Completada,34,650,430,22100
+2026-04-14,Norte,Monterrey,Ferreteria del Norte,Ana Torres,Electronica,Monitor,Transferencia,Completada,16,1500,1000,24000
+2026-04-15,Centro,Puebla,Distribuidora Vela,Marta Solis,Alimentos,Aceite,Credito,Completada,205,45,30,9225
+2026-04-16,Norte,Saltillo,Aceros Coahuila,Ana Torres,Materiales,Cemento,Tarjeta,Completada,118,150,110,17700
+2026-04-20,Occidente,Leon,Innova Bajio,Diego Ramos,Electronica,Router WiFi,Efectivo,Completada,25,650,430,16250
+2026-04-21,Centro,CDMX,Grupo Aranda,Luis Prado,Electronica,Laptop,Efectivo,Devuelta,4,12000,9200,48000
+2026-04-23,Occidente,Leon,Innova Bajio,Diego Ramos,Materiales,Grava,Tarjeta,Completada,200,90,55,18000
+2026-04-24,Norte,Monterrey,Constructora Lumen,Ana Torres,Materiales,Pintura,Credito,Pendiente,36,170,120,6120
+2026-04-25,Norte,Saltillo,Aceros Coahuila,Ana Torres,Materiales,Cemento,Efectivo,Completada,148,150,110,22200
+2026-04-27,Occidente,Guadalajara,Tecno Solutions,Diego Ramos,Alimentos,Harina,Tarjeta,Devuelta,146,45,29,6570
+2026-04-28,Norte,Monterrey,Ferreteria del Norte,Ana Torres,Materiales,Cemento,Transferencia,Completada,123,150,110,18450
+2026-05-01,Centro,Puebla,Distribuidora Vela,Marta Solis,Alimentos,Harina,Credito,Completada,166,45,29,7470
+2026-05-03,Norte,Monterrey,Constructora Lumen,Ana Torres,Materiales,Grava,Tarjeta,Completada,155,90,55,13950
+2026-05-04,Centro,Queretaro,Comercial Rios,Marta Solis,Alimentos,Harina,Tarjeta,Completada,176,45,29,7920
+2026-05-05,Norte,Monterrey,Ferreteria del Norte,Ana Torres,Materiales,Pintura,Efectivo,Completada,56,170,120,9520
+2026-05-06,Sureste,Merida,Peninsular Trade,Sofia Lara,Materiales,Varilla,Transferencia,Completada,84,180,130,15120
+2026-05-07,Occidente,Guadalajara,Tecno Solutions,Diego Ramos,Electronica,Router WiFi,Efectivo,Completada,14,650,430,9100
+2026-05-11,Centro,CDMX,Corporativo Zenit,Luis Prado,Electronica,Disco SSD,Tarjeta,Completada,14,900,620,12600
+2026-05-15,Centro,Queretaro,Comercial Rios,Marta Solis,Alimentos,Cafe,Credito,Completada,86,120,82,10320
+2026-05-16,Norte,Saltillo,Aceros Coahuila,Ana Torres,Electronica,Laptop,Efectivo,Completada,5,12000,9200,60000
+2026-05-18,Centro,CDMX,Corporativo Zenit,Luis Prado,Electronica,Disco SSD,Transferencia,Devuelta,11,900,620,9900
+2026-05-20,Occidente,Leon,Innova Bajio,Diego Ramos,Materiales,Varilla,Transferencia,Completada,110,180,130,19800
+2026-05-21,Centro,CDMX,Corporativo Zenit,Luis Prado,Electronica,Teclado,Transferencia,Completada,35,250,150,8750
+2026-05-23,Norte,Saltillo,Aceros Coahuila,Ana Torres,Alimentos,Azucar,Transferencia,Completada,163,44,29,7172
+2026-05-24,Norte,Monterrey,Constructora Lumen,Ana Torres,Materiales,Varilla,Tarjeta,Completada,81,180,130,14580
+2026-05-26,Centro,Queretaro,Comercial Rios,Marta Solis,Alimentos,Arroz,Transferencia,Completada,158,60,40,9480
+2026-05-27,Sureste,Merida,Peninsular Trade,Sofia Lara,Alimentos,Arroz,Credito,Devuelta,136,60,40,8160
+2026-06-01,Centro,Puebla,Distribuidora Vela,Marta Solis,Electronica,Monitor,Efectivo,Completada,8,1500,1000,12000
+2026-06-02,Norte,Saltillo,Aceros Coahuila,Ana Torres,Materiales,Grava,Transferencia,Completada,126,90,55,11340
+2026-06-03,Occidente,Guadalajara,Tecno Solutions,Diego Ramos,Electronica,Monitor,Tarjeta,Completada,19,1500,1000,28500
+2026-06-04,Centro,Queretaro,Comercial Rios,Marta Solis,Materiales,Grava,Credito,Completada,163,90,55,14670
+2026-06-05,Occidente,Leon,Innova Bajio,Diego Ramos,Materiales,Varilla,Credito,Completada,96,180,130,17280
+2026-06-06,Occidente,Leon,Innova Bajio,Diego Ramos,Electronica,Disco SSD,Efectivo,Completada,11,900,620,9900
+2026-06-07,Norte,Monterrey,Ferreteria del Norte,Ana Torres,Materiales,Varilla,Tarjeta,Pendiente,110,180,130,19800
+2026-06-08,Occidente,Guadalajara,Tecno Solutions,Diego Ramos,Electronica,Monitor,Credito,Completada,10,1500,1000,15000
+2026-06-09,Norte,Monterrey,Constructora Lumen,Ana Torres,Materiales,Tubo PVC,Credito,Completada,85,120,80,10200
+2026-06-10,Centro,CDMX,Grupo Aranda,Luis Prado,Alimentos,Aceite,Tarjeta,Completada,203,45,30,9135
+2026-06-11,Occidente,Guadalajara,Tecno Solutions,Diego Ramos,Alimentos,Cafe,Transferencia,Completada,70,120,82,8400
+2026-06-13,Norte,Monterrey,Constructora Lumen,Ana Torres,Materiales,Grava,Efectivo,Completada,102,90,55,9180
+2026-06-14,Norte,Monterrey,Constructora Lumen,Ana Torres,Alimentos,Aceite,Tarjeta,Completada,196,45,30,8820
+2026-06-15,Sureste,Merida,Peninsular Trade,Sofia Lara,Alimentos,Arroz,Transferencia,Completada,146,60,40,8760
+2026-06-16,Centro,Queretaro,Comercial Rios,Marta Solis,Alimentos,Aceite,Efectivo,Completada,165,45,30,7425
+2026-06-17,Norte,Monterrey,Constructora Lumen,Ana Torres,Materiales,Cemento,Efectivo,Devuelta,131,150,110,19650
+2026-06-19,Norte,Monterrey,Ferreteria del Norte,Ana Torres,Materiales,Varilla,Efectivo,Completada,90,180,130,16200
+2026-06-20,Norte,Monterrey,Ferreteria del Norte,Ana Torres,Materiales,Varilla,Transferencia,Completada,71,180,130,12780
+2026-06-22,Centro,Puebla,Distribuidora Vela,Marta Solis,Alimentos,Azucar,Credito,Completada,161,44,29,7084
+2026-06-24,Sureste,Merida,Peninsular Trade,Sofia Lara,Alimentos,Arroz,Transferencia,Completada,132,60,40,7920
+2026-06-27,Centro,Puebla,Distribuidora Vela,Marta Solis,Alimentos,Harina,Tarjeta,Devuelta,171,45,29,7695
+2026-06-28,Occidente,Guadalajara,Tecno Solutions,Diego Ramos,Materiales,Tubo PVC,Transferencia,Completada,57,120,80,6840
+2026-07-01,Centro,Puebla,Distribuidora Vela,Marta Solis,Materiales,Grava,Tarjeta,Completada,151,90,55,13590
+2026-07-04,Norte,Monterrey,Ferreteria del Norte,Ana Torres,Materiales,Cemento,Efectivo,Completada,132,150,110,19800
+2026-07-05,Centro,CDMX,Grupo Aranda,Luis Prado,Alimentos,Aceite,Tarjeta,Completada,224,45,30,10080
+2026-07-06,Centro,Queretaro,Comercial Rios,Marta Solis,Alimentos,Arroz,Credito,Completada,126,60,40,7560
+2026-07-09,Centro,CDMX,Grupo Aranda,Luis Prado,Electronica,Teclado,Credito,Completada,21,250,150,5250
+2026-07-10,Occidente,Leon,Innova Bajio,Diego Ramos,Materiales,Tubo PVC,Efectivo,Completada,89,120,80,10680
+2026-07-11,Norte,Saltillo,Aceros Coahuila,Ana Torres,Electronica,Router WiFi,Tarjeta,Devuelta,14,650,430,9100
+2026-07-12,Centro,CDMX,Corporativo Zenit,Luis Prado,Alimentos,Aceite,Transferencia,Completada,192,45,30,8640
+2026-07-13,Centro,Puebla,Distribuidora Vela,Marta Solis,Alimentos,Arroz,Credito,Devuelta,128,60,40,7680
+2026-07-15,Norte,Monterrey,Ferreteria del Norte,Ana Torres,Alimentos,Azucar,Credito,Completada,163,44,29,7172
+2026-07-16,Occidente,Leon,Innova Bajio,Diego Ramos,Materiales,Grava,Tarjeta,Pendiente,148,90,55,13320
+2026-07-17,Occidente,Guadalajara,Tecno Solutions,Diego Ramos,Alimentos,Arroz,Tarjeta,Completada,129,60,40,7740
+2026-07-19,Norte,Saltillo,Aceros Coahuila,Ana Torres,Alimentos,Harina,Tarjeta,Pendiente,155,45,29,6975
+2026-07-21,Centro,CDMX,Grupo Aranda,Luis Prado,Electronica,Laptop,Efectivo,Completada,5,12000,9200,60000
+2026-07-22,Centro,Puebla,Distribuidora Vela,Marta Solis,Alimentos,Arroz,Efectivo,Completada,135,60,40,8100
+2026-07-24,Occidente,Guadalajara,Tecno Solutions,Diego Ramos,Electronica,Disco SSD,Tarjeta,Completada,28,900,620,25200
+2026-07-25,Centro,CDMX,Corporativo Zenit,Luis Prado,Electronica,Router WiFi,Transferencia,Completada,26,650,430,16900
+2026-07-26,Centro,CDMX,Grupo Aranda,Luis Prado,Materiales,Cemento,Credito,Completada,120,150,110,18000
+2026-07-27,Occidente,Leon,Innova Bajio,Diego Ramos,Alimentos,Aceite,Transferencia,Completada,204,45,30,9180
+2026-07-28,Occidente,Guadalajara,Tecno Solutions,Diego Ramos,Electronica,Monitor,Credito,Completada,17,1500,1000,25500
+2026-08-01,Norte,Saltillo,Aceros Coahuila,Ana Torres,Alimentos,Harina,Credito,Completada,167,45,29,7515
+2026-08-02,Norte,Monterrey,Constructora Lumen,Ana Torres,Materiales,Tubo PVC,Transferencia,Devuelta,69,120,80,8280
+2026-08-03,Sureste,Merida,Peninsular Trade,Sofia Lara,Alimentos,Cafe,Transferencia,Devuelta,62,120,82,7440
+2026-08-05,Occidente,Guadalajara,Tecno Solutions,Diego Ramos,Electronica,Laptop,Transferencia,Completada,6,12000,9200,72000
+2026-08-06,Centro,CDMX,Grupo Aranda,Luis Prado,Electronica,Laptop,Transferencia,Completada,8,12000,9200,96000
+2026-08-08,Centro,CDMX,Grupo Aranda,Luis Prado,Materiales,Grava,Transferencia,Devuelta,150,90,55,13500
+2026-08-10,Norte,Saltillo,Aceros Coahuila,Ana Torres,Alimentos,Aceite,Transferencia,Completada,227,45,30,10215
+2026-08-11,Occidente,Leon,Innova Bajio,Diego Ramos,Alimentos,Harina,Credito,Completada,147,45,29,6615
+2026-08-13,Centro,CDMX,Grupo Aranda,Luis Prado,Alimentos,Cafe,Efectivo,Completada,41,120,82,4920
+2026-08-14,Norte,Monterrey,Ferreteria del Norte,Ana Torres,Materiales,Pintura,Credito,Completada,46,170,120,7820
+2026-08-15,Occidente,Leon,Innova Bajio,Diego Ramos,Alimentos,Harina,Tarjeta,Completada,150,45,29,6750
+2026-08-17,Centro,Queretaro,Comercial Rios,Marta Solis,Alimentos,Harina,Credito,Completada,140,45,29,6300
+2026-08-18,Occidente,Guadalajara,Tecno Solutions,Diego Ramos,Electronica,Laptop,Transferencia,Completada,5,12000,9200,60000
+2026-08-19,Centro,Queretaro,Comercial Rios,Marta Solis,Materiales,Varilla,Efectivo,Completada,94,180,130,16920
+2026-08-20,Occidente,Guadalajara,Tecno Solutions,Diego Ramos,Electronica,Monitor,Tarjeta,Pendiente,17,1500,1000,25500
+2026-08-23,Occidente,Guadalajara,Tecno Solutions,Diego Ramos,Alimentos,Arroz,Credito,Completada,147,60,40,8820
+2026-08-24,Centro,CDMX,Corporativo Zenit,Luis Prado,Alimentos,Harina,Credito,Completada,165,45,29,7425
+2026-08-25,Occidente,Leon,Innova Bajio,Diego Ramos,Materiales,Cemento,Transferencia,Devuelta,157,150,110,23550
+2026-08-26,Centro,Queretaro,Comercial Rios,Marta Solis,Electronica,Teclado,Efectivo,Completada,40,250,150,10000
+2026-08-28,Occidente,Leon,Innova Bajio,Diego Ramos,Materiales,Grava,Efectivo,Completada,139,90,55,12510
+2026-09-02,Occidente,Leon,Innova Bajio,Diego Ramos,Alimentos,Cafe,Tarjeta,Devuelta,88,120,82,10560
+2026-09-03,Sureste,Merida,Peninsular Trade,Sofia Lara,Alimentos,Arroz,Transferencia,Devuelta,128,60,40,7680
+2026-09-04,Occidente,Guadalajara,Tecno Solutions,Diego Ramos,Electronica,Disco SSD,Efectivo,Completada,17,900,620,15300
+2026-09-05,Occidente,Leon,Innova Bajio,Diego Ramos,Electronica,Laptop,Efectivo,Devuelta,7,12000,9200,84000
+2026-09-06,Occidente,Guadalajara,Tecno Solutions,Diego Ramos,Electronica,Router WiFi,Efectivo,Completada,20,650,430,13000
+2026-09-07,Occidente,Leon,Innova Bajio,Diego Ramos,Materiales,Grava,Credito,Completada,104,90,55,9360
+2026-09-10,Norte,Monterrey,Constructora Lumen,Ana Torres,Materiales,Tubo PVC,Credito,Completada,60,120,80,7200
+2026-09-14,Centro,Queretaro,Comercial Rios,Marta Solis,Materiales,Cemento,Tarjeta,Completada,115,150,110,17250
+2026-09-15,Centro,CDMX,Corporativo Zenit,Luis Prado,Alimentos,Arroz,Efectivo,Completada,128,60,40,7680
+2026-09-17,Norte,Monterrey,Ferreteria del Norte,Ana Torres,Materiales,Tubo PVC,Tarjeta,Completada,70,120,80,8400
+2026-09-18,Centro,Queretaro,Comercial Rios,Marta Solis,Alimentos,Aceite,Efectivo,Completada,230,45,30,10350
+2026-09-19,Occidente,Leon,Innova Bajio,Diego Ramos,Electronica,Disco SSD,Efectivo,Devuelta,15,900,620,13500
+2026-09-22,Norte,Saltillo,Aceros Coahuila,Ana Torres,Materiales,Cemento,Efectivo,Completada,102,150,110,15300
+2026-09-23,Centro,CDMX,Corporativo Zenit,Luis Prado,Materiales,Tubo PVC,Efectivo,Completada,69,120,80,8280
+2026-09-26,Occidente,Leon,Innova Bajio,Diego Ramos,Materiales,Pintura,Tarjeta,Completada,57,170,120,9690
+2026-09-28,Occidente,Leon,Innova Bajio,Diego Ramos,Materiales,Tubo PVC,Transferencia,Completada,69,120,80,8280
+2026-10-01,Sureste,Merida,Peninsular Trade,Sofia Lara,Alimentos,Cafe,Tarjeta,Completada,61,120,82,7320
+2026-10-02,Norte,Saltillo,Aceros Coahuila,Ana Torres,Alimentos,Aceite,Transferencia,Completada,182,45,30,8190
+2026-10-04,Centro,Puebla,Distribuidora Vela,Marta Solis,Electronica,Laptop,Tarjeta,Completada,4,12000,9200,48000
+2026-10-05,Centro,CDMX,Grupo Aranda,Luis Prado,Electronica,Disco SSD,Tarjeta,Devuelta,17,900,620,15300
+2026-10-06,Norte,Monterrey,Ferreteria del Norte,Ana Torres,Materiales,Grava,Transferencia,Devuelta,115,90,55,10350
+2026-10-08,Norte,Monterrey,Constructora Lumen,Ana Torres,Materiales,Tubo PVC,Credito,Completada,73,120,80,8760
+2026-10-09,Sureste,Merida,Peninsular Trade,Sofia Lara,Electronica,Monitor,Tarjeta,Completada,19,1500,1000,28500
+2026-10-10,Centro,Puebla,Distribuidora Vela,Marta Solis,Alimentos,Cafe,Tarjeta,Completada,66,120,82,7920
+2026-10-11,Occidente,Leon,Innova Bajio,Diego Ramos,Materiales,Tubo PVC,Tarjeta,Completada,68,120,80,8160
+2026-10-12,Sureste,Merida,Peninsular Trade,Sofia Lara,Alimentos,Harina,Credito,Devuelta,153,45,29,6885
+2026-10-13,Centro,Puebla,Distribuidora Vela,Marta Solis,Materiales,Cemento,Credito,Pendiente,145,150,110,21750
+2026-10-14,Norte,Saltillo,Aceros Coahuila,Ana Torres,Electronica,Disco SSD,Credito,Completada,30,900,620,27000
+2026-10-16,Centro,CDMX,Grupo Aranda,Luis Prado,Electronica,Laptop,Efectivo,Completada,3,12000,9200,36000
+2026-10-17,Norte,Monterrey,Constructora Lumen,Ana Torres,Materiales,Grava,Efectivo,Completada,125,90,55,11250
+2026-10-18,Occidente,Guadalajara,Tecno Solutions,Diego Ramos,Alimentos,Arroz,Transferencia,Completada,140,60,40,8400
+2026-10-22,Centro,Puebla,Distribuidora Vela,Marta Solis,Alimentos,Harina,Credito,Completada,141,45,29,6345
+2026-10-23,Occidente,Leon,Innova Bajio,Diego Ramos,Alimentos,Harina,Credito,Completada,140,45,29,6300
+2026-10-24,Occidente,Leon,Innova Bajio,Diego Ramos,Alimentos,Arroz,Efectivo,Completada,126,60,40,7560
+2026-10-26,Norte,Saltillo,Aceros Coahuila,Ana Torres,Materiales,Grava,Efectivo,Devuelta,167,90,55,15030
+2026-10-27,Norte,Monterrey,Ferreteria del Norte,Ana Torres,Electronica,Disco SSD,Transferencia,Completada,18,900,620,16200
+2026-11-01,Centro,CDMX,Corporativo Zenit,Luis Prado,Materiales,Varilla,Credito,Devuelta,110,180,130,19800
+2026-11-03,Norte,Monterrey,Constructora Lumen,Ana Torres,Electronica,Laptop,Efectivo,Devuelta,7,12000,9200,84000
+2026-11-04,Occidente,Guadalajara,Tecno Solutions,Diego Ramos,Materiales,Tubo PVC,Tarjeta,Completada,71,120,80,8520
+2026-11-05,Occidente,Leon,Innova Bajio,Diego Ramos,Materiales,Varilla,Tarjeta,Completada,109,180,130,19620
+2026-11-06,Norte,Saltillo,Aceros Coahuila,Ana Torres,Electronica,Monitor,Tarjeta,Completada,18,1500,1000,27000
+2026-11-07,Centro,Queretaro,Comercial Rios,Marta Solis,Alimentos,Arroz,Efectivo,Completada,127,60,40,7620
+2026-11-08,Centro,CDMX,Grupo Aranda,Luis Prado,Electronica,Disco SSD,Credito,Completada,15,900,620,13500
+2026-11-10,Centro,CDMX,Corporativo Zenit,Luis Prado,Electronica,Disco SSD,Credito,Completada,22,900,620,19800
+2026-11-11,Centro,CDMX,Grupo Aranda,Luis Prado,Electronica,Laptop,Efectivo,Completada,5,12000,9200,60000
+2026-11-12,Sureste,Merida,Peninsular Trade,Sofia Lara,Alimentos,Arroz,Tarjeta,Completada,124,60,40,7440
+2026-11-13,Centro,Queretaro,Comercial Rios,Marta Solis,Materiales,Cemento,Transferencia,Devuelta,159,150,110,23850
+2026-11-15,Norte,Monterrey,Constructora Lumen,Ana Torres,Alimentos,Harina,Credito,Completada,172,45,29,7740
+2026-11-16,Occidente,Leon,Innova Bajio,Diego Ramos,Electronica,Laptop,Transferencia,Completada,9,12000,9200,108000
+2026-11-17,Norte,Monterrey,Constructora Lumen,Ana Torres,Electronica,Router WiFi,Efectivo,Completada,32,650,430,20800
+2026-11-18,Centro,CDMX,Grupo Aranda,Luis Prado,Electronica,Teclado,Credito,Completada,30,250,150,7500
+2026-11-20,Centro,CDMX,Corporativo Zenit,Luis Prado,Alimentos,Cafe,Credito,Completada,73,120,82,8760
+2026-11-21,Centro,Puebla,Distribuidora Vela,Marta Solis,Alimentos,Azucar,Credito,Completada,154,44,29,6776
+2026-11-22,Norte,Monterrey,Constructora Lumen,Ana Torres,Materiales,Grava,Transferencia,Completada,109,90,55,9810
+2026-11-25,Centro,CDMX,Grupo Aranda,Luis Prado,Electronica,Laptop,Credito,Devuelta,4,12000,9200,48000
+2026-11-26,Occidente,Leon,Innova Bajio,Diego Ramos,Electronica,Router WiFi,Efectivo,Completada,28,650,430,18200
+2026-11-27,Norte,Saltillo,Aceros Coahuila,Ana Torres,Materiales,Varilla,Efectivo,Completada,81,180,130,14580
+2026-11-28,Centro,CDMX,Corporativo Zenit,Luis Prado,Electronica,Monitor,Credito,Completada,8,1500,1000,12000
+2026-12-01,Centro,Queretaro,Comercial Rios,Marta Solis,Electronica,Disco SSD,Transferencia,Completada,14,900,620,12600
+2026-12-02,Norte,Monterrey,Ferreteria del Norte,Ana Torres,Alimentos,Harina,Credito,Pendiente,144,45,29,6480
+2026-12-03,Centro,CDMX,Corporativo Zenit,Luis Prado,Electronica,Router WiFi,Efectivo,Completada,31,650,430,20150
+2026-12-04,Occidente,Guadalajara,Tecno Solutions,Diego Ramos,Electronica,Disco SSD,Transferencia,Completada,18,900,620,16200
+2026-12-05,Norte,Monterrey,Ferreteria del Norte,Ana Torres,Materiales,Pintura,Transferencia,Completada,44,170,120,7480
+2026-12-06,Norte,Monterrey,Constructora Lumen,Ana Torres,Alimentos,Aceite,Efectivo,Completada,183,45,30,8235
+2026-12-07,Occidente,Guadalajara,Tecno Solutions,Diego Ramos,Electronica,Laptop,Efectivo,Completada,5,12000,9200,60000
+2026-12-08,Norte,Saltillo,Aceros Coahuila,Ana Torres,Materiales,Tubo PVC,Transferencia,Completada,83,120,80,9960
+2026-12-10,Centro,Puebla,Distribuidora Vela,Marta Solis,Alimentos,Aceite,Transferencia,Completada,160,45,30,7200
+2026-12-11,Norte,Saltillo,Aceros Coahuila,Ana Torres,Electronica,Router WiFi,Credito,Completada,28,650,430,18200
+2026-12-12,Norte,Monterrey,Constructora Lumen,Ana Torres,Materiales,Grava,Efectivo,Completada,142,90,55,12780
+2026-12-15,Norte,Saltillo,Aceros Coahuila,Ana Torres,Materiales,Varilla,Tarjeta,Completada,84,180,130,15120
+2026-12-16,Norte,Monterrey,Constructora Lumen,Ana Torres,Alimentos,Azucar,Transferencia,Completada,152,44,29,6688
+2026-12-18,Centro,CDMX,Grupo Aranda,Luis Prado,Electronica,Disco SSD,Efectivo,Completada,26,900,620,23400
+2026-12-22,Occidente,Leon,Innova Bajio,Diego Ramos,Materiales,Grava,Credito,Completada,186,90,55,16740
+2026-12-23,Norte,Saltillo,Aceros Coahuila,Ana Torres,Materiales,Cemento,Efectivo,Completada,108,150,110,16200
+2026-12-24,Occidente,Leon,Innova Bajio,Diego Ramos,Materiales,Tubo PVC,Transferencia,Completada,53,120,80,6360
+2026-12-25,Norte,Saltillo,Aceros Coahuila,Ana Torres,Materiales,Grava,Credito,Completada,185,90,55,16650
+2026-12-26,Sureste,Merida,Peninsular Trade,Sofia Lara,Alimentos,Cafe,Transferencia,Devuelta,67,120,82,8040
+2026-12-27,Norte,Saltillo,Aceros Coahuila,Ana Torres,Materiales,Grava,Transferencia,Completada,140,90,55,12600
+2026-12-28,Centro,CDMX,Corporativo Zenit,Luis Prado,Electronica,Teclado,Transferencia,Completada,25,250,150,6250
