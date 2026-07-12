@@ -10,6 +10,7 @@ import { PgConnect } from "@/components/pg-connect";
 import { QueryConsole } from "@/components/query-console";
 import { SchemaPreview } from "@/components/schema-preview";
 import { Section } from "@/components/section";
+import { WipeButton } from "@/components/wipe-button";
 import {
   dropTable,
   loadCsvAsTable,
@@ -17,7 +18,7 @@ import {
   SAMPLE_CSV_NAME,
   type TableSchema,
 } from "@/lib/csv-table";
-import { useDashboard } from "@/lib/dashboard-store";
+import { clearDashboard, useDashboard } from "@/lib/dashboard-store";
 import { LanguageToggle, useT } from "@/lib/i18n";
 import { runPgQuery } from "@/lib/pg-client";
 import {
@@ -132,6 +133,8 @@ export default function Home() {
   const existingTableNames = tables.map((t) => t.schema.tableName);
   const activeTables = mode === "file" ? tables.map((t) => t.schema) : pg?.tables ?? [];
   const hasData = activeTables.length > 0;
+  // The wipe control only appears once there's something to purge.
+  const hasSomethingToWipe = tables.length > 0 || pg !== null || pinnedCount > 0;
   const isSample = mode === "file" && tables.length === 1 && tables[0].fileName === SAMPLE_CSV_NAME;
   const showSharedNotice =
     mode === "file" && tables.length === 0 && !loadingSample && sharedQuestion !== null;
@@ -154,6 +157,21 @@ export default function Home() {
     setTables((prev) => prev.filter((t) => t.schema.tableName !== tableName));
   }
 
+  // "Start over": purge everything this browser persisted — loaded tables (also
+  // dropped from DuckDB), the conversation, and the pinned dashboard. The API
+  // key and language preference live under their own keys and are left alone.
+  function handleWipe() {
+    for (const t of tables) void dropTable(t.schema.tableName).catch(() => {});
+    fileB64Ref.current.clear();
+    setTables([]);
+    setPg(null);
+    setSharedQuestion(null);
+    setAutoRunShared(false);
+    clearDashboard();
+    clearTables();
+    clearTurns();
+  }
+
   return (
     <div className="min-h-screen bg-background">
       <main className="mx-auto flex w-full max-w-3xl flex-col px-6 pt-12 pb-24">
@@ -170,6 +188,7 @@ export default function Home() {
                 <LayoutGrid className="size-3.5" />
                 <span>{t.nav.dashboard(pinnedCount)}</span>
               </Link>
+              {hasSomethingToWipe && <WipeButton onWipe={handleWipe} />}
               <LanguageToggle />
               <ApiKeyDialog />
             </div>

@@ -28,6 +28,17 @@ const es = {
     back: "Volver",
   },
 
+  wipe: {
+    button: "Borrar todo",
+    dialogTitle: "¿Borrar todos tus datos locales?",
+    dialogBody:
+      "Se eliminarán de este navegador los archivos y tablas cargados, la " +
+      "conversación y las tarjetas del tablero. Tu API key y el idioma se conservan. " +
+      "Esta acción no se puede deshacer.",
+    confirm: "Borrar todo",
+    cancel: "Cancelar",
+  },
+
   home: {
     title: "Pregúntale a tus datos",
     subtitle:
@@ -219,6 +230,16 @@ const en: Messages = {
   nav: {
     dashboard: (n: number) => `Dashboard${n > 0 ? ` (${n})` : ""}`,
     back: "Back",
+  },
+
+  wipe: {
+    button: "Clear all",
+    dialogTitle: "Clear all your local data?",
+    dialogBody:
+      "This removes the loaded files and tables, the conversation, and the dashboard " +
+      "cards from this browser. Your API key and language are kept. This can't be undone.",
+    confirm: "Clear all",
+    cancel: "Cancel",
   },
 
   home: {

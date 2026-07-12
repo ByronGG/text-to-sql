@@ -273,9 +273,57 @@ demostrable por sí solo.
 > **v4 cerrada** (pasos 1–5 completos; el 6 queda condicional). La app vive en
 > **askql.vercel.app**; README actualizado a v1–v4. Total de tests: **89**.
 
+---
+
+## Roadmap v5 — Alcance y pulido
+
+Tres extras posteriores a v4, cada uno funcional y demostrable por sí solo. No amplían
+la arquitectura; suben el alcance del portafolio (bilingüe), la riqueza del demo (datos)
+y la sensación de exploración guiada (seguimientos).
+
+- [x] **Paso 1 · Interfaz bilingüe (ES/EN)** — sistema i18n propio **sin dependencia**
+  (`i18n.tsx`): `LanguageProvider` + hooks `useLang`/`useT`, diccionarios tipados (`es`
+  es la fuente de verdad y `en: Messages = typeof es` obliga a la misma forma),
+  preferencia en `localStorage` (default español, aplicada tras el mount para no romper
+  la hidratación). Switch `LanguageToggle` en el header de `/` y `/dashboard`. Traducida
+  toda la UI de cara al usuario (página principal, tablero, ~10 componentes), incluido el
+  formato de números por locale. El idioma **también viaja al modelo**: se añadió `lang`
+  a los payloads de `/api/sql`, `/api/suggest`, `/api/explain` (y luego `/api/follow-up`)
+  y `sql-prompt.ts` parametriza los prompts por idioma — el contrato JSON no cambia, solo
+  el idioma del texto (interpretación, aclaración, sugerencias, explicación). Las claves
+  de caché incluyen `lang` para no mezclar respuestas ES/EN. Verificado en navegador:
+  toggle bidireccional, persistencia tras reload, y salida del modelo cambiando de idioma.
+  `/eval` queda en español (herramienta interna).
+- [x] **Paso 2 · Datos de ejemplo enriquecidos** — el CSV de ejemplo pasó de 41 filas/7
+  columnas a **229 filas/13 columnas** de un año completo, añadiendo región▸ciudad▸
+  cliente▸vendedor, método de pago, estado (completada/devuelta/pendiente) y precio/costo
+  por unidad (habilita márgenes/ganancia). Se genera de forma determinista con
+  `scripts/gen-sample.mjs` (PRNG sembrado) que además **imprime cada agregado** que fija
+  la batería de una tabla → el CSV y `eval-cases.ts` nunca se desincronizan. `EVAL_CASES`
+  recalculado + **5 casos nuevos** que ejercitan las columnas nuevas (ganancia total,
+  top-vendedor, monto por región, por método de pago, ventas devueltas). Verificado por
+  triple vía: cómputo del generador, parseo independiente del CSV en disco, y ejecución
+  real en DuckDB vía la app (total 3,796,253 y ganancia 1,119,745 coincidieron). Beneficio:
+  las preguntas sugeridas y de seguimiento se vuelven mucho más ricas.
+- [x] **Paso 3 · Chips de seguimiento dinámicos** — nueva ruta `/api/follow-up` (mismo
+  patrón que suggest/explain, reusa `api-groq.ts`) que recibe esquema + pregunta anterior
+  + SQL y devuelve 2–3 refinamientos contextuales (filtrar por un valor, cambiar/añadir
+  agrupación, desglosar por fecha, ordenar distinto, comparar). Prompt dedicado
+  `FOLLOWUP_PROMPT` (ES/EN) y hook `fetchFollowUps`. En `query-console.tsx` un efecto los
+  obtiene para el turno activo (keyed por `turnId`, con guarda anti-carrera) y se
+  re-obtienen al cambiar de turno o idioma; se renderizan bajo "CONTINÚA CON" /
+  "CONTINUE WITH". Al hacer clic corren como seguimiento (nuevo turno con historial).
+  Cacheados server-side por hash `{tables, question, sql, lang}`. Verificado en navegador:
+  chips contextuales que **encadenan** (cada resultado genera seguimientos nuevos), usan
+  el historial, aprovechan las columnas nuevas, y el endpoint EN devuelve inglés.
+
+> **v5 cerrada** (3/3 pasos). Los tres extras se verificaron en navegador; la suite de
+> tests se mantiene en **89** (lógica pura sin cambios; lo nuevo es UI/prompts/ruta,
+> cubierto por typecheck + verificación end-to-end).
+
 ### Ideas sueltas (si sobra tiempo)
 - Streaming de la respuesta del LLM (mejora percepción de velocidad; el JSON
   estructurado lo complica).
 - Entrada Parquet (DuckDB lo lee nativo; solo falta el camino de carga).
-- Toggle de idioma ES/EN (amplía el alcance del portafolio).
+- Cargar todas las hojas de un Excel de golpe (hoy se elige una hoja por carga).
 - Verificación end-to-end del modo Postgres contra una DB real sembrada (Docker).
