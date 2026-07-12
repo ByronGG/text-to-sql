@@ -269,6 +269,7 @@ demostrable por sí solo.
   instancias; hoy son por-instancia y está documentado como limitación consciente.
   **Diferido a propósito:** es infraestructura sin beneficio visible sin tráfico real;
   no vale la pena para un portafolio hoy. Se retoma solo si el demo empieza a recibir uso.
+  (Se sigue rastreando en **v6 · paso 2**.)
 
 > **v4 cerrada** (pasos 1–5 completos; el 6 queda condicional). La app vive en
 > **askql.vercel.app**; README actualizado a v1–v4. Total de tests: **89**.
@@ -321,7 +322,32 @@ y la sensación de exploración guiada (seguimientos).
 > tests se mantiene en **89** (lógica pura sin cambios; lo nuevo es UI/prompts/ruta,
 > cubierto por typecheck + verificación end-to-end).
 
-### Ideas sueltas (si sobra tiempo)
+---
+
+## Roadmap v6 — Próximos pasos
+
+Pendientes reales en orden de prioridad. El primero es un bug de contexto conocido; el
+resto es el backlog que ya venía anotado.
+
+- [ ] **Paso 1 · Preguntas sugeridas con contexto multi-archivo** — con **un solo
+  archivo** las sugerencias ("Prueba con") son correctas, pero al **agregar más archivos**
+  los chips no se regeneran contemplando el nuevo esquema: siguen reflejando solo el
+  primer archivo (y nunca proponen una pregunta que combine tablas con JOIN). Causa: en
+  `query-console.tsx` el efecto que llama a `fetchSuggestions(tables, lang)` depende solo
+  de `[lang]` (con `eslint-disable exhaustive-deps`), así que no se re-dispara cuando
+  cambia `tables`; y la consola se monta con `key={mode}` (no por conjunto de tablas),
+  por lo que agregar un archivo tampoco la remonta. Arreglo propuesto: añadir una **firma
+  de las tablas** (p. ej. `tablesSignature(allowedTableNames)`) a las dependencias del
+  efecto para re-obtener sugerencias cuando cambie el conjunto de tablas. `/api/suggest`
+  ya recibe todas las tablas y cachea por hash del esquema, así que el backend no necesita
+  cambios. Verificar en navegador con 2+ archivos que las sugerencias incluyan al menos
+  una pregunta que cruce tablas.
+- [ ] **Paso 2 · Infra compartida (si hay tráfico real)** — mover rate limit y cache a
+  Upstash Redis para que sobrevivan cold starts y se compartan entre instancias
+  serverless (hoy son por-instancia, documentado como limitación consciente). Es el
+  antiguo v4 · paso 6: diferido a propósito, se retoma solo si el demo recibe uso real.
+
+### Backlog (ideas sueltas, si sobra tiempo)
 - Streaming de la respuesta del LLM (mejora percepción de velocidad; el JSON
   estructurado lo complica).
 - Entrada Parquet (DuckDB lo lee nativo; solo falta el camino de carga).
