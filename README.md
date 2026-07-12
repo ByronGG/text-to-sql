@@ -39,8 +39,13 @@ Hay dos modos de datos:
   temporales, barras para categóricas, tarjetas para métricas únicas).
 - **Historial conversacional** — preguntas de seguimiento que se apoyan en las
   anteriores ("y ahora solo los de Monterrey").
-- **Preguntas sugeridas** generadas del esquema, y **"Explicar"** (SQL → lenguaje
-  natural, el camino inverso).
+- **Preguntas sugeridas** generadas del esquema para arrancar, y **chips de
+  seguimiento** que tras cada resultado proponen refinamientos contextuales de esa
+  consulta (desglosar por fecha, filtrar por un valor, comparar contra otro grupo).
+- **"Explicar"** — SQL → lenguaje natural, el camino inverso.
+- **Bilingüe (ES/EN)** — un switch cambia toda la interfaz *y* el idioma de lo que
+  genera el modelo (interpretaciones, aclaraciones, sugerencias y explicaciones); la
+  preferencia se guarda localmente.
 - **SQL editable** — edita el SQL generado y re-ejecútalo por el mismo guard.
 - **Tablero** — fija resultados como tarjetas reordenables (un entregable visual).
 - **La sesión sobrevive un refresh** — tablas y conversación se guardan localmente.
@@ -51,13 +56,13 @@ Hay dos modos de datos:
 
 ```
 Navegador (modo Archivo)                    Vercel (serverless)
-┌──────────────────────────────────┐        ┌─────────────────────────────┐
-│ DuckDB-WASM (Web Worker)          │        │  /api/sql      (NL → SQL)    │
-│   ← CSV/Excel del usuario         │  POST  │  /api/suggest  (preguntas)  │
-│ Validación SQL (guard)            │ ─────► │  /api/explain  (explicación)│ ──► Groq
-│ Ejecución + resultados + gráfica  │ ◄───── │  rate limit · Zod · cache   │     (LLM)
-│ Persistencia local · Tablero      │        └─────────────────────────────┘
-└──────────────────────────────────┘
+┌──────────────────────────────────┐        ┌────────────────────────────────┐
+│ DuckDB-WASM (Web Worker)          │        │  /api/sql       (NL → SQL)     │
+│   ← CSV/Excel del usuario         │  POST  │  /api/suggest   (sugerencias)  │
+│ Validación SQL (guard)            │ ─────► │  /api/follow-up (seguimiento)  │ ──► Groq
+│ Ejecución + resultados + gráfica  │ ◄───── │  /api/explain   (explicación)  │     (LLM)
+│ Persistencia local · Tablero      │        │  rate limit · Zod · cache      │
+└──────────────────────────────────┘        └────────────────────────────────┘
                                              Modo Postgres:
                                              /api/pg/schema · /api/pg/query
                                              (introspección + ejecución READ ONLY
@@ -94,15 +99,23 @@ mismo guard y la misma UI** — solo cambia el ejecutor de SQL que se inyecta.
 La ruta **`/eval`** corre dos baterías fijas de preguntas por el pipeline real (modelo →
 guard → ejecución) y puntúa la **precisión de ejecución**: compara el *conjunto de
 resultados* del SQL generado con el esperado, no el texto del SQL (hay muchos SQL
-correctos). Cubre una tabla (agregación, group by, filtros, top-N, ambigüedad) y
-multi-tabla (JOINs de 2 y 3 tablas), midiendo cada una por separado. Es la métrica que
-protege el prompt de regresiones y el argumento de que los números son correctos, no
-plausibles.
+correctos). Cubre una tabla (agregación, cálculo de ganancia, group by, filtros, top-N,
+ambigüedad) y multi-tabla (JOINs de 2 y 3 tablas), midiendo cada una por separado. Es la
+métrica que protege el prompt de regresiones y el argumento de que los números son
+correctos, no plausibles.
+
+El dataset de ejemplo de una tabla (`public/sample-data/ventas.csv`, 229 filas de un año
+completo con región, vendedor, método de pago, estado y precio/costo por unidad) se
+genera de forma determinista con [`scripts/gen-sample.mjs`](scripts/gen-sample.mjs), que
+además imprime cada agregado que la batería fija — así el CSV y los valores esperados
+nunca se desincronizan.
 
 ## Stack
 
 - **Framework**: Next.js (App Router) + TypeScript + Tailwind CSS v4 + shadcn/ui
   (`@base-ui/react`)
+- **i18n (ES/EN)**: implementación propia con diccionarios tipados (sin dependencia),
+  que también parametriza los prompts para que el modelo responda en el idioma activo
 - **Motor de datos (cliente)**: `@duckdb/duckdb-wasm`, autoalojado en `public/duckdb/`
   (sin CDN en runtime)
 - **Postgres (servidor)**: `pg` (node-postgres), ejecución en transacción `READ ONLY`
@@ -131,8 +144,10 @@ npm run typecheck
 npm run lint
 ```
 
-En la app puedes usar tu propio CSV/Excel o el botón "Usar datos de ejemplo". También
-puedes pegar tu propia API key desde la UI (BYOK) para no depender del límite compartido.
+En la app puedes usar tu propio CSV/Excel o el botón "Usar datos de ejemplo" (un año de
+ventas con 13 columnas; se regenera con `node scripts/gen-sample.mjs`). También puedes
+cambiar la interfaz entre español e inglés con el switch ES/EN, y pegar tu propia API key
+desde la UI (BYOK) para no depender del límite compartido.
 
 ## Decisiones y limitaciones conocidas
 
@@ -156,5 +171,7 @@ puedes pegar tu propia API key desde la UI (BYOK) para no depender del límite c
 
 Ver [PLAN.md](PLAN.md) para el detalle. **v1–v4 están completas**: ingesta y ejecución
 con validación, gráficas e historial, multi-archivo con JOINs, Postgres, BYOK, cache,
-set de evaluación, tests + CI, persistencia de sesión y tablero. El trabajo condicional
-restante (infra compartida en Redis) solo aplica si el demo recibe tráfico real.
+set de evaluación, tests + CI, persistencia de sesión y tablero. Extras posteriores:
+**interfaz bilingüe ES/EN** (UI + salida del modelo) y **chips de seguimiento dinámicos**.
+El trabajo condicional restante (infra compartida en Redis) solo aplica si el demo recibe
+tráfico real.
