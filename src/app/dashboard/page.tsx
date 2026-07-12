@@ -6,9 +6,11 @@ import { QueryResults } from "@/components/query-results";
 import { SqlCodeBlock } from "@/components/sql-code-block";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { clearDashboard, reorder, unpin, useDashboard } from "@/lib/dashboard-store";
+import { LanguageToggle, useT } from "@/lib/i18n";
 
 export default function DashboardPage() {
   const cards = useDashboard();
+  const t = useT();
 
   return (
     <div className="min-h-screen bg-background">
@@ -16,18 +18,21 @@ export default function DashboardPage() {
         <header>
           <div className="flex items-center justify-between gap-4">
             <span className="font-mono text-xs tracking-[0.2em] text-muted-foreground">
-              AskQL · TABLERO
+              {t.dashboard.brand}
             </span>
-            <Link
-              href="/"
-              className="inline-flex items-center gap-1 text-xs text-muted-foreground transition-colors hover:text-foreground"
-            >
-              <ArrowLeft className="size-3.5" /> Volver
-            </Link>
+            <div className="flex items-center gap-4">
+              <LanguageToggle />
+              <Link
+                href="/"
+                className="inline-flex items-center gap-1 text-xs text-muted-foreground transition-colors hover:text-foreground"
+              >
+                <ArrowLeft className="size-3.5" /> {t.nav.back}
+              </Link>
+            </div>
           </div>
           <div className="mt-3 flex items-baseline justify-between gap-4">
             <h1 className="text-3xl font-medium tracking-tight text-foreground">
-              Tablero de resultados
+              {t.dashboard.title}
             </h1>
             {cards.length > 0 && (
               <button
@@ -35,13 +40,12 @@ export default function DashboardPage() {
                 onClick={() => clearDashboard()}
                 className="shrink-0 text-xs text-muted-foreground transition-colors hover:text-foreground"
               >
-                Limpiar tablero
+                {t.dashboard.clearBoard}
               </button>
             )}
           </div>
           <p className="mt-2 max-w-lg text-muted-foreground">
-            Los resultados que fijas desde una consulta quedan aquí como tarjetas —
-            reordénalas y expórtalas. Se guardan en tu navegador.
+            {t.dashboard.description}
           </p>
           <div className="mt-8 h-px w-full bg-border" />
         </header>
@@ -49,9 +53,9 @@ export default function DashboardPage() {
         <div className="mt-8 flex flex-col gap-6">
           {cards.length === 0 ? (
             <p className="rounded-lg border border-dashed border-border px-4 py-10 text-center text-sm text-muted-foreground">
-              Aún no has fijado resultados. En una consulta, usa{" "}
-              <span className="font-medium text-foreground">Fijar al tablero</span> y
-              aparecerán aquí.
+              {t.dashboard.empty(
+                <span className="font-medium text-foreground">{t.dashboard.pinLabel}</span>,
+              )}
             </p>
           ) : (
             cards.map((card, i) => (
@@ -68,7 +72,7 @@ export default function DashboardPage() {
                       type="button"
                       onClick={() => reorder(card.id, -1)}
                       disabled={i === 0}
-                      aria-label="Subir"
+                      aria-label={t.dashboard.up}
                       className="rounded p-1 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground disabled:opacity-30"
                     >
                       <ArrowUp className="size-4" />
@@ -77,7 +81,7 @@ export default function DashboardPage() {
                       type="button"
                       onClick={() => reorder(card.id, 1)}
                       disabled={i === cards.length - 1}
-                      aria-label="Bajar"
+                      aria-label={t.dashboard.down}
                       className="rounded p-1 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground disabled:opacity-30"
                     >
                       <ArrowDown className="size-4" />
@@ -85,7 +89,7 @@ export default function DashboardPage() {
                     <button
                       type="button"
                       onClick={() => unpin(card.id)}
-                      aria-label="Quitar"
+                      aria-label={t.dashboard.remove}
                       className="rounded p-1 text-muted-foreground transition-colors hover:bg-muted hover:text-destructive"
                     >
                       <X className="size-4" />
@@ -93,10 +97,10 @@ export default function DashboardPage() {
                   </div>
                 </CardHeader>
                 <CardContent className="space-y-3">
-                  <QueryResults result={card.result} fileNameBase="resultado" />
+                  <QueryResults result={card.result} fileNameBase={t.dashboard.resultFileBase} />
                   <details className="text-xs">
                     <summary className="cursor-pointer text-muted-foreground transition-colors hover:text-foreground">
-                      SQL
+                      {t.dashboard.sql}
                     </summary>
                     <div className="mt-2">
                       <SqlCodeBlock sql={card.sql} />

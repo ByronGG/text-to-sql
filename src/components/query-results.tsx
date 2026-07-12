@@ -23,6 +23,7 @@ import {
 import { ResultChart } from "@/components/result-chart";
 import { deriveChartSpec } from "@/lib/chart-spec";
 import { exportQueryResult } from "@/lib/export-results";
+import { useT } from "@/lib/i18n";
 import type { QueryResult } from "@/lib/run-query";
 import { cn } from "@/lib/utils";
 
@@ -33,12 +34,14 @@ interface QueryResultsProps {
 
 const PAGE_SIZE = 10;
 
-export function QueryResults({ result, fileNameBase = "resultados" }: QueryResultsProps) {
+export function QueryResults({ result, fileNameBase }: QueryResultsProps) {
+  const t = useT();
+  const base = fileNameBase ?? t.console.resultsFileBase;
   const [sorting, setSorting] = useState<SortingState>([]);
   const chartSpec = useMemo(() => deriveChartSpec(result), [result]);
   const hasChart = chartSpec.kind !== "none";
   const [view, setView] = useState<"chart" | "table">(hasChart ? "chart" : "table");
-  const chartLabel = chartSpec.kind === "metric" ? "Resumen" : "Gráfica";
+  const chartLabel = chartSpec.kind === "metric" ? t.results.summaryLabel : t.results.chartLabel;
 
   const columns = useMemo<ColumnDef<Record<string, unknown>>[]>(
     () =>
@@ -65,8 +68,8 @@ export function QueryResults({ result, fileNameBase = "resultados" }: QueryResul
     <div className="space-y-3">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <p className="text-sm text-muted-foreground">
-          {result.rowCount.toLocaleString("es-MX")} fila{result.rowCount === 1 ? "" : "s"}
-          {result.truncated && " · truncado a 1,000"}
+          {t.results.rows(result.rowCount.toLocaleString(t.locale), result.rowCount)}
+          {result.truncated && t.results.truncated}
         </p>
         <div className="flex items-center gap-2">
           {hasChart && (
@@ -93,7 +96,7 @@ export function QueryResults({ result, fileNameBase = "resultados" }: QueryResul
                     : "text-muted-foreground hover:text-foreground",
                 )}
               >
-                <Table2 className="size-3.5" /> Tabla
+                <Table2 className="size-3.5" /> {t.results.tableLabel}
               </button>
             </div>
           )}
@@ -101,17 +104,17 @@ export function QueryResults({ result, fileNameBase = "resultados" }: QueryResul
             type="button"
             variant="outline"
             size="sm"
-            onClick={() => exportQueryResult(result, "csv", fileNameBase)}
+            onClick={() => exportQueryResult(result, "csv", base)}
           >
-            <Download className="size-4" /> CSV
+            <Download className="size-4" /> {t.results.csv}
           </Button>
           <Button
             type="button"
             variant="outline"
             size="sm"
-            onClick={() => exportQueryResult(result, "xlsx", fileNameBase)}
+            onClick={() => exportQueryResult(result, "xlsx", base)}
           >
-            <Download className="size-4" /> Excel
+            <Download className="size-4" /> {t.results.excel}
           </Button>
         </div>
       </div>
@@ -164,7 +167,7 @@ export function QueryResults({ result, fileNameBase = "resultados" }: QueryResul
 
           <div className="flex items-center justify-between gap-2">
             <p className="text-xs text-muted-foreground">
-              Página {table.getState().pagination.pageIndex + 1} de {table.getPageCount() || 1}
+              {t.results.page(table.getState().pagination.pageIndex + 1, table.getPageCount() || 1)}
             </p>
             <div className="flex gap-2">
               <Button
@@ -174,7 +177,7 @@ export function QueryResults({ result, fileNameBase = "resultados" }: QueryResul
                 onClick={() => table.previousPage()}
                 disabled={!table.getCanPreviousPage()}
               >
-                Anterior
+                {t.results.prev}
               </Button>
               <Button
                 type="button"
@@ -183,7 +186,7 @@ export function QueryResults({ result, fileNameBase = "resultados" }: QueryResul
                 onClick={() => table.nextPage()}
                 disabled={!table.getCanNextPage()}
               >
-                Siguiente
+                {t.results.next}
               </Button>
             </div>
           </div>

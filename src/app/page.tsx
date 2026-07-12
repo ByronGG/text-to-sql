@@ -18,6 +18,7 @@ import {
   type TableSchema,
 } from "@/lib/csv-table";
 import { useDashboard } from "@/lib/dashboard-store";
+import { LanguageToggle, useT } from "@/lib/i18n";
 import { runPgQuery } from "@/lib/pg-client";
 import {
   clearTables,
@@ -56,6 +57,7 @@ export default function Home() {
   // doesn't re-encode the files.
   const fileB64Ref = useRef<Map<string, string>>(new Map());
   const pinnedCount = useDashboard().length;
+  const t = useT();
 
   // On mount: a shared link takes precedence (auto-load, don't restore);
   // otherwise re-register any persisted tables into DuckDB. `window` is unavailable
@@ -166,19 +168,17 @@ export default function Home() {
                 className="inline-flex items-center gap-1.5 text-xs text-muted-foreground transition-colors hover:text-foreground"
               >
                 <LayoutGrid className="size-3.5" />
-                <span>Tablero{pinnedCount > 0 ? ` (${pinnedCount})` : ""}</span>
+                <span>{t.nav.dashboard(pinnedCount)}</span>
               </Link>
+              <LanguageToggle />
               <ApiKeyDialog />
             </div>
           </div>
           <h1 className="mt-3 text-3xl font-medium tracking-tight text-foreground">
-            Pregúntale a tus datos
+            {t.home.title}
           </h1>
           <p className="mt-2 max-w-lg text-muted-foreground">
-            Sube uno o varios archivos (CSV o Excel) o conéctate a una base Postgres, y
-            pregunta en lenguaje natural. AskQL traduce tu pregunta a SQL —incluyendo
-            joins entre tablas—, la ejecuta y te devuelve los resultados en una tabla
-            lista para exportar a Excel.
+            {t.home.subtitle}
           </p>
           <div className="mt-8 h-px w-full bg-border" />
         </header>
@@ -186,7 +186,7 @@ export default function Home() {
         <div className="mt-8 flex flex-col gap-10">
           <Disclaimer mode={mode} />
 
-          <Section index="01" label="DATOS">
+          <Section index="01" label={t.home.sectionData}>
             <div className="space-y-4">
               <div className="inline-flex rounded-lg border border-border p-0.5">
                 {(["file", "postgres"] as const).map((m) => (
@@ -201,7 +201,7 @@ export default function Home() {
                         : "text-muted-foreground hover:text-foreground",
                     )}
                   >
-                    {m === "file" ? "Archivo" : "Postgres"}
+                    {m === "file" ? t.home.modeFile : t.home.modePostgres}
                   </button>
                 ))}
               </div>
@@ -218,18 +218,17 @@ export default function Home() {
                   ))}
 
                   {loadingSample ? (
-                    <p className="text-sm text-muted-foreground">Cargando datos de ejemplo…</p>
+                    <p className="text-sm text-muted-foreground">{t.home.loadingSample}</p>
                   ) : (
                     <div className="space-y-3">
                       {showSharedNotice && (
                         <p className="rounded-lg border border-primary/25 bg-accent/40 px-4 py-3 text-sm text-accent-foreground">
-                          Recibiste una consulta compartida: «{sharedQuestion}». Sube tu
-                          archivo para ejecutarla.
+                          {t.home.sharedNotice(sharedQuestion ?? "")}
                         </p>
                       )}
                       {tables.length > 0 && (
                         <span className="block font-mono text-xs tracking-[0.15em] text-muted-foreground">
-                          AGREGAR OTRO ARCHIVO
+                          {t.home.addAnotherFile}
                         </span>
                       )}
                       <CsvUpload existingTableNames={existingTableNames} onLoaded={addTable} />
@@ -240,14 +239,14 @@ export default function Home() {
                 <div className="space-y-4">
                   <div className="flex items-center justify-between">
                     <span className="font-mono text-xs tracking-[0.15em] text-muted-foreground">
-                      CONECTADO · {pg.tables.length} tabla{pg.tables.length === 1 ? "" : "s"}
+                      {t.home.connected(pg.tables.length)}
                     </span>
                     <button
                       type="button"
                       onClick={() => setPg(null)}
                       className="text-xs text-muted-foreground transition-colors hover:text-foreground"
                     >
-                      Desconectar
+                      {t.home.disconnect}
                     </button>
                   </div>
                   {pg.tables.map((table) => (
@@ -265,7 +264,7 @@ export default function Home() {
           </Section>
 
           {hasData && (
-            <Section index="02" label="CONSULTA">
+            <Section index="02" label={t.home.sectionQuery}>
               <QueryConsole
                 key={mode}
                 tables={activeTables}

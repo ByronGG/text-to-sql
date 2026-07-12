@@ -5,6 +5,7 @@ import type { WorkBook } from "xlsx";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { loadCsvAsTable, loadSampleTable, type TableSchema } from "@/lib/csv-table";
+import { useT } from "@/lib/i18n";
 import { deriveTableName } from "@/lib/table-name";
 import { isExcelFile, parseWorkbook, sheetToCsvFile, stripExtension } from "@/lib/xlsx-input";
 
@@ -29,6 +30,7 @@ export function CsvUpload({ onLoaded, existingTableNames = [] }: CsvUploadProps)
   const [error, setError] = useState<string | null>(null);
   const [sheetChoice, setSheetChoice] = useState<SheetChoice | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const t = useT();
 
   const loadCsvFile = useCallback(
     async (file: File, displayName: string) => {
@@ -41,14 +43,14 @@ export function CsvUpload({ onLoaded, existingTableNames = [] }: CsvUploadProps)
       } catch (err) {
         setError(
           err instanceof Error
-            ? `No se pudo procesar el archivo: ${err.message}`
-            : "No se pudo procesar el archivo.",
+            ? t.upload.errorProcess(err.message)
+            : t.upload.errorProcessGeneric,
         );
       } finally {
         setIsLoading(false);
       }
     },
-    [onLoaded, existingTableNames],
+    [onLoaded, existingTableNames, t],
   );
 
   const loadSheet = useCallback(
@@ -80,7 +82,7 @@ export function CsvUpload({ onLoaded, existingTableNames = [] }: CsvUploadProps)
       try {
         const { workbook, sheetNames } = await parseWorkbook(file);
         if (sheetNames.length === 0) {
-          setError("El archivo de Excel no tiene hojas.");
+          setError(t.upload.errorNoSheets);
           setIsLoading(false);
           return;
         }
@@ -99,13 +101,13 @@ export function CsvUpload({ onLoaded, existingTableNames = [] }: CsvUploadProps)
       } catch (err) {
         setError(
           err instanceof Error
-            ? `No se pudo leer el Excel: ${err.message}`
-            : "No se pudo leer el archivo de Excel.",
+            ? t.upload.errorReadExcel(err.message)
+            : t.upload.errorReadExcelGeneric,
         );
         setIsLoading(false);
       }
     },
-    [loadCsvFile, loadSheet],
+    [loadCsvFile, loadSheet, t],
   );
 
   const handleSample = useCallback(async () => {
@@ -116,11 +118,11 @@ export function CsvUpload({ onLoaded, existingTableNames = [] }: CsvUploadProps)
       const { schema, fileName, file } = await loadSampleTable(existingTableNames);
       onLoaded(schema, fileName, file);
     } catch {
-      setError("No se pudo cargar el ejemplo.");
+      setError(t.upload.errorSample);
     } finally {
       setIsLoading(false);
     }
-  }, [onLoaded, existingTableNames]);
+  }, [onLoaded, existingTableNames, t]);
 
   return (
     <Card>
@@ -128,7 +130,7 @@ export function CsvUpload({ onLoaded, existingTableNames = [] }: CsvUploadProps)
         {sheetChoice ? (
           <div className="flex flex-col items-center gap-3 rounded-lg border border-border p-10 text-center">
             <p className="text-sm text-muted-foreground">
-              {sheetChoice.displayName} tiene varias hojas. ¿Cuál quieres analizar?
+              {t.upload.sheetPrompt(sheetChoice.displayName)}
             </p>
             <div className="flex flex-wrap justify-center gap-2">
               {sheetChoice.sheetNames.map((name) => (
@@ -148,7 +150,7 @@ export function CsvUpload({ onLoaded, existingTableNames = [] }: CsvUploadProps)
               onClick={() => setSheetChoice(null)}
               className="text-xs text-muted-foreground transition-colors hover:text-foreground"
             >
-              Cancelar
+              {t.upload.cancel}
             </button>
           </div>
         ) : (
@@ -169,15 +171,15 @@ export function CsvUpload({ onLoaded, existingTableNames = [] }: CsvUploadProps)
             }}
           >
             <p className="text-sm text-muted-foreground">
-              {isDragging ? "Suelta tu archivo aquí" : "Arrastra tu CSV o Excel aquí, o"}
+              {isDragging ? t.upload.dropHere : t.upload.dragPrompt}
             </p>
             <div className="flex flex-wrap justify-center gap-2">
               <Button type="button" disabled={isLoading} onClick={() => inputRef.current?.click()}>
-                {isLoading ? "Procesando…" : "Elegir archivo"}
+                {isLoading ? t.upload.processing : t.upload.chooseFile}
               </Button>
               {existingTableNames.length === 0 && (
                 <Button type="button" variant="secondary" disabled={isLoading} onClick={() => void handleSample()}>
-                  Usar datos de ejemplo
+                  {t.upload.useSample}
                 </Button>
               )}
             </div>

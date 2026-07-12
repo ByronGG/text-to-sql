@@ -13,6 +13,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import type { TableSchema } from "@/lib/csv-table";
+import { useT } from "@/lib/i18n";
 
 interface SchemaPreviewProps {
   schema: TableSchema;
@@ -24,6 +25,7 @@ interface SchemaPreviewProps {
 
 export function SchemaPreview({ schema, fileName, onRemove }: SchemaPreviewProps) {
   const [showSample, setShowSample] = useState(false);
+  const t = useT();
 
   return (
     <Card>
@@ -36,7 +38,7 @@ export function SchemaPreview({ schema, fileName, onRemove }: SchemaPreviewProps
             </span>
           </CardTitle>
           <p className="text-sm text-muted-foreground">
-            {schema.rowCount.toLocaleString("es-MX")} filas · {schema.columns.length} columnas
+            {t.schema.rowsCols(schema.rowCount.toLocaleString(t.locale), schema.columns.length)}
           </p>
         </div>
         {onRemove && (
@@ -45,13 +47,13 @@ export function SchemaPreview({ schema, fileName, onRemove }: SchemaPreviewProps
             onClick={onRemove}
             className="inline-flex shrink-0 items-center gap-1 text-xs text-muted-foreground transition-colors hover:text-foreground"
           >
-            <X className="size-3" /> Quitar
+            <X className="size-3" /> {t.schema.remove}
           </button>
         )}
       </CardHeader>
       <CardContent className="space-y-4">
         <div>
-          <h3 className="mb-2 text-sm font-medium">Columnas detectadas</h3>
+          <h3 className="mb-2 text-sm font-medium">{t.schema.columnsDetected}</h3>
           <div className="flex flex-wrap gap-2">
             {schema.columns.map((column) => (
               <Badge key={column.name} variant="secondary" className="gap-1.5 font-normal">
@@ -59,7 +61,7 @@ export function SchemaPreview({ schema, fileName, onRemove }: SchemaPreviewProps
                 <span className="font-mono text-[0.7rem] text-muted-foreground">{column.type}</span>
                 {column.categoricalValues && (
                   <span className="text-muted-foreground">
-                    · {column.categoricalValues.length} valores
+                    · {t.schema.values(column.categoricalValues.length)}
                   </span>
                 )}
               </Badge>
@@ -74,7 +76,7 @@ export function SchemaPreview({ schema, fileName, onRemove }: SchemaPreviewProps
             className="inline-flex items-center gap-1 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
           >
             {showSample ? <ChevronDown className="size-3.5" /> : <ChevronRight className="size-3.5" />}
-            Muestra de datos
+            {t.schema.dataSample}
           </button>
           {showSample && (
             <div className="mt-2 overflow-x-auto rounded-md border">

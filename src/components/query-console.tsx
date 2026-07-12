@@ -20,6 +20,7 @@ import { SqlCodeBlock } from "@/components/sql-code-block";
 import { askQuestion } from "@/lib/ask-question";
 import type { TableSchema } from "@/lib/csv-table";
 import { pin, unpin, useDashboard } from "@/lib/dashboard-store";
+import { useLang, useT } from "@/lib/i18n";
 import { fetchExplanation, fetchSuggestions } from "@/lib/llm-client";
 import { runQuery, type QueryResult } from "@/lib/run-query";
 import { loadTurns, saveTurns, tablesSignature } from "@/lib/session-store";
@@ -76,6 +77,8 @@ export function QueryConsole({
   const allowedTableNames = tables.map((t) => t.tableName);
   const persistSig = tablesSignature(allowedTableNames);
   const dashboard = useDashboard();
+  const { lang } = useLang();
+  const t = useT();
 
   const [question, setQuestion] = useState(initialQuestion ?? "");
   const [status, setStatus] = useState<Status>("idle");
@@ -129,9 +132,9 @@ export function QueryConsole({
 
     let response;
     try {
-      response = await askQuestion({ question: forQuestion, tables, history, failedSql });
+      response = await askQuestion({ question: forQuestion, tables, history, failedSql, lang });
     } catch (err) {
-      setErrorMessage(err instanceof Error ? err.message : "No se pudo contactar el servicio.");
+      setErrorMessage(err instanceof Error ? err.message : t.console.errorService);
       setStatus("error");
       return;
     }
@@ -158,11 +161,11 @@ export function QueryConsole({
       setQuestion("");
       setStatus("idle");
     } catch (err) {
-      const message = err instanceof Error ? err.message : "Error desconocido.";
+      const message = err instanceof Error ? err.message : t.console.errorUnknown;
       if (attempt < MAX_RETRIES) {
         await runAttempts(forQuestion, displayQuestion, history, { sql: response.consulta, error: message }, attempt + 1);
       } else {
-        setErrorMessage(`No se pudo generar una consulta válida: ${message}`);
+        setErrorMessage(t.console.errorInvalidQuery(message));
         setStatus("error");
       }
     }
@@ -188,8 +191,8 @@ export function QueryConsole({
       const result = await runSql(sql, allowedTableNames);
       const turn: Turn = {
         id: crypto.randomUUID(),
-        question: `${active.question} · SQL editado`,
-        interpretation: "Consulta editada manualmente.",
+        question: `${active.question} · ${t.console.editedSuffix}`,
+        interpretation: t.console.editedInterpretation,
         sql,
         result,
       };
@@ -198,7 +201,7 @@ export function QueryConsole({
       setEditingSql(false);
       setShowSql(false);
     } catch (err) {
-      setEditError(err instanceof Error ? err.message : "El SQL no se pudo ejecutar.");
+      setEditError(err instanceof Error ? err.message : t.console.errorSqlRun);
     } finally {
       setRunningEdit(false);
     }
@@ -208,12 +211,12 @@ export function QueryConsole({
     if (!active) return;
     setExplaining(true);
     try {
-      const text = await fetchExplanation(active.sql, tables);
+      const text = await fetchExplanation(active.sql, tables, lang);
       setExplanation({ turnId: active.id, text });
     } catch (err) {
       setExplanation({
         turnId: active.id,
-        text: err instanceof Error ? err.message : "No se pudo explicar la consulta.",
+        text: err instanceof Error ? err.message : t.console.errorExplain,
       });
     } finally {
       setExplaining(false);
@@ -253,18 +256,17 @@ export function QueryConsole({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Fetches suggested questions once on mount (unless a shared question is
-  // auto-running). The setState happens after an await, so it's not the
-  // synchronous set-state-in-effect the lint warns about.
-  const didFetchSuggestions = useRef(false);
+  // Fetches suggested questions (unless a shared question is auto-running), and
+  // re-fetches when the language changes so the chips match the UI language.
+  // The setState happens after an await, so it's not the synchronous
+  // set-state-in-effect the lint warns about.
   useEffect(() => {
-    if (didFetchSuggestions.current || autoRun) return;
-    didFetchSuggestions.current = true;
-    fetchSuggestions(tables)
+    if (autoRun) return;
+    fetchSuggestions(tables, lang)
       .then(setSuggestions)
       .catch(() => {});
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [lang]);
 
   // Rehydrates a persisted conversation on mount, but only if it ran against the
   // same set of tables (signature match) — so loading a different dataset never
@@ -313,10 +315,11 @@ export function QueryConsole({
   async function handleClarificationSubmit() {
     if (!clarification || !clarificationAnswer.trim()) return;
     const answer = clarificationAnswer.trim();
-    const combinedQuestion =
-      `Pregunta original: "${clarification.originalQuestion}"\n` +
-      `Aclaración pedida: "${clarification.question}"\n` +
-      `Respuesta del usuario: "${answer}"`;
+    const combinedQuestion = t.console.combinedQuestion(
+      clarification.originalQuestion,
+      clarification.question,
+      answer,
+    );
 
     setStatus("loading");
     setClarification(null);
@@ -344,8 +347,8 @@ export function QueryConsole({
           <Input
             placeholder={
               turns.length > 0
-                ? "Pregunta de seguimiento… (ej. y ahora solo los de Monterrey)"
-                : "Ej. ¿Quiénes son mis mejores clientes de agosto?"
+                ? t.console.placeholderFollowup
+                : t.console.placeholderInitial
             }
             value={question}
             onChange={(e) => setQuestion(e.target.value)}
@@ -355,14 +358,14 @@ export function QueryConsole({
             disabled={isLoading}
           />
           <Button type="button" onClick={() => void handleAsk()} disabled={isLoading || !question.trim()}>
-            {isLoading ? "Pensando…" : "Preguntar"}
+            {isLoading ? t.console.thinking : t.console.ask}
           </Button>
         </div>
 
         {turns.length === 0 && !isLoading && suggestions.length > 0 && (
           <div className="space-y-2">
             <span className="inline-flex items-center gap-1.5 font-mono text-xs tracking-[0.15em] text-muted-foreground">
-              <Sparkles className="size-3.5 text-primary" /> PRUEBA CON
+              <Sparkles className="size-3.5 text-primary" /> {t.console.tryWith}
             </span>
             <div className="flex flex-wrap gap-2">
               {suggestions.map((s) => (
@@ -383,14 +386,14 @@ export function QueryConsole({
           <div className="space-y-2">
             <div className="flex items-center justify-between">
               <span className="font-mono text-xs tracking-[0.15em] text-muted-foreground">
-                CONVERSACIÓN
+                {t.console.conversation}
               </span>
               <button
                 type="button"
                 onClick={clearThread}
                 className="text-xs text-muted-foreground transition-colors hover:text-foreground"
               >
-                Limpiar
+                {t.console.clear}
               </button>
             </div>
             <div className="flex flex-col gap-0.5 rounded-lg border border-border p-1">
@@ -420,8 +423,8 @@ export function QueryConsole({
           <div className="space-y-2">
             <p className="text-xs text-muted-foreground">
               {retryAttempt === 0
-                ? "Generando la consulta…"
-                : `Corrigiendo la consulta (intento ${retryAttempt + 1} de ${MAX_RETRIES + 1})…`}
+                ? t.console.generating
+                : t.console.correcting(retryAttempt + 1, MAX_RETRIES + 1)}
             </p>
             <Skeleton className="h-4 w-3/4" />
             <Skeleton className="h-4 w-1/2" />
@@ -432,7 +435,7 @@ export function QueryConsole({
         {errorMessage && (
           <Alert variant="destructive">
             <AlertCircle />
-            <AlertTitle>No se pudo completar la consulta</AlertTitle>
+            <AlertTitle>{t.console.errorTitle}</AlertTitle>
             <AlertDescription>{errorMessage}</AlertDescription>
           </Alert>
         )}
@@ -450,7 +453,7 @@ export function QueryConsole({
                   className="inline-flex items-center gap-1 text-xs text-muted-foreground transition-colors hover:text-foreground"
                 >
                   {showSql ? <ChevronDown className="size-3.5" /> : <ChevronRight className="size-3.5" />}
-                  {showSql ? "Ocultar SQL" : "Ver SQL generado"}
+                  {showSql ? t.console.hideSql : t.console.showSql}
                 </button>
                 <button
                   type="button"
@@ -459,7 +462,7 @@ export function QueryConsole({
                   className="inline-flex items-center gap-1 text-xs text-muted-foreground transition-colors hover:text-foreground disabled:opacity-60"
                 >
                   <Lightbulb className="size-3.5" />
-                  {explaining ? "Explicando…" : "Explicar"}
+                  {explaining ? t.console.explaining : t.console.explain}
                 </button>
                 <button
                   type="button"
@@ -468,11 +471,11 @@ export function QueryConsole({
                 >
                   {dashboard.some((c) => c.id === active.id) ? (
                     <>
-                      <Check className="size-3.5 text-primary" /> En el tablero
+                      <Check className="size-3.5 text-primary" /> {t.console.pinned}
                     </>
                   ) : (
                     <>
-                      <Pin className="size-3.5" /> Fijar al tablero
+                      <Pin className="size-3.5" /> {t.console.pin}
                     </>
                   )}
                 </button>
@@ -483,11 +486,11 @@ export function QueryConsole({
                 >
                   {shareCopied ? (
                     <>
-                      <Check className="size-3.5 text-primary" /> Enlace copiado
+                      <Check className="size-3.5 text-primary" /> {t.console.linkCopied}
                     </>
                   ) : (
                     <>
-                      <Share2 className="size-3.5" /> Compartir
+                      <Share2 className="size-3.5" /> {t.console.share}
                     </>
                   )}
                 </button>
@@ -518,7 +521,7 @@ export function QueryConsole({
                           onClick={() => void runEditedSql()}
                           disabled={runningEdit || !sqlDraft.trim()}
                         >
-                          {runningEdit ? "Ejecutando…" : "Ejecutar SQL"}
+                          {runningEdit ? t.console.running : t.console.runSql}
                         </Button>
                         <button
                           type="button"
@@ -528,7 +531,7 @@ export function QueryConsole({
                           }}
                           className="text-xs text-muted-foreground transition-colors hover:text-foreground"
                         >
-                          Cancelar
+                          {t.console.cancel}
                         </button>
                       </div>
                     </>
@@ -544,7 +547,7 @@ export function QueryConsole({
                         }}
                         className="inline-flex items-center gap-1 text-xs text-muted-foreground transition-colors hover:text-foreground"
                       >
-                        <Pencil className="size-3.5" /> Editar y re-ejecutar
+                        <Pencil className="size-3.5" /> {t.console.editRerun}
                       </button>
                     </>
                   )}
@@ -552,7 +555,7 @@ export function QueryConsole({
               )}
             </div>
 
-            <QueryResults result={active.result} fileNameBase="resultados" />
+            <QueryResults result={active.result} fileNameBase={t.console.resultsFileBase} />
           </div>
         )}
       </CardContent>
@@ -568,7 +571,7 @@ export function QueryConsole({
       >
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Necesito más contexto</DialogTitle>
+            <DialogTitle>{t.console.needContext}</DialogTitle>
             <DialogDescription>{clarification?.question}</DialogDescription>
           </DialogHeader>
           <Input
@@ -578,7 +581,7 @@ export function QueryConsole({
             onKeyDown={(e) => {
               if (e.key === "Enter") void handleClarificationSubmit();
             }}
-            placeholder="Tu respuesta…"
+            placeholder={t.console.yourAnswer}
           />
           <DialogFooter>
             <Button
@@ -586,7 +589,7 @@ export function QueryConsole({
               onClick={() => void handleClarificationSubmit()}
               disabled={!clarificationAnswer.trim()}
             >
-              Responder
+              {t.console.respond}
             </Button>
           </DialogFooter>
         </DialogContent>

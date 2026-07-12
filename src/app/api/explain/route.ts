@@ -14,14 +14,15 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Solicitud inválida." }, { status: 400 });
   }
 
-  const key = hashObject({ sql: parsed.data.sql, tables: parsed.data.tables });
+  const lang = parsed.data.lang ?? "es";
+  const key = hashObject({ sql: parsed.data.sql, tables: parsed.data.tables, lang });
   const cached = cache.get(key);
   if (cached) return NextResponse.json({ explicacion: cached }, { headers: { "x-cache": "HIT" } });
 
   const access = resolveGroqAccess(request);
   if (access instanceof NextResponse) return access;
 
-  const result = await callGroq(buildExplainMessages(parsed.data.sql, parsed.data.tables), access.apiKey);
+  const result = await callGroq(buildExplainMessages(parsed.data.sql, parsed.data.tables, lang), access.apiKey);
   if (!result.ok) return groqErrorResponse(result, access.clientKey);
 
   let rawJson: unknown;

@@ -12,6 +12,7 @@ import {
   YAxis,
 } from "recharts";
 import type { ChartSpec } from "@/lib/chart-spec";
+import { useT } from "@/lib/i18n";
 import type { QueryResult } from "@/lib/run-query";
 
 const CHART_HEIGHT = 320;
@@ -42,9 +43,6 @@ const ACCENT = "#b0552a";
 const GRID = "#e5e1d8";
 const AXIS = "#6e6a61";
 
-const numberFmt = new Intl.NumberFormat("es-MX", { maximumFractionDigits: 2 });
-const compactFmt = new Intl.NumberFormat("es-MX", { notation: "compact", maximumFractionDigits: 1 });
-
 interface ResultChartProps {
   spec: Exclude<ChartSpec, { kind: "none" }>;
   result: QueryResult;
@@ -54,10 +52,12 @@ function ChartTooltip({
   active,
   payload,
   label,
+  numberFmt,
 }: {
   active?: boolean;
   payload?: { value: number; name: string }[];
   label?: string | number;
+  numberFmt: Intl.NumberFormat;
 }) {
   if (!active || !payload?.length) return null;
   return (
@@ -70,6 +70,9 @@ function ChartTooltip({
 
 export function ResultChart({ spec, result }: ResultChartProps) {
   const { ref, width } = useContainerWidth();
+  const { locale } = useT();
+  const numberFmt = new Intl.NumberFormat(locale, { maximumFractionDigits: 2 });
+  const compactFmt = new Intl.NumberFormat(locale, { notation: "compact", maximumFractionDigits: 1 });
 
   if (spec.kind === "metric") {
     return (
@@ -109,7 +112,7 @@ export function ResultChart({ spec, result }: ResultChartProps) {
             <CartesianGrid stroke={GRID} strokeDasharray="3 3" vertical={false} />
             <XAxis dataKey={spec.xKey} {...axisProps} interval="preserveStartEnd" minTickGap={24} />
             <YAxis {...axisProps} width={52} tickFormatter={(v) => compactFmt.format(Number(v))} />
-            <Tooltip content={<ChartTooltip />} />
+            <Tooltip content={<ChartTooltip numberFmt={numberFmt} />} />
             <Line
               type="monotone"
               dataKey={spec.yKey}
@@ -129,7 +132,7 @@ export function ResultChart({ spec, result }: ResultChartProps) {
             <CartesianGrid stroke={GRID} strokeDasharray="3 3" vertical={false} />
             <XAxis dataKey={spec.xKey} {...axisProps} interval={0} angle={-20} textAnchor="end" height={56} />
             <YAxis {...axisProps} width={52} tickFormatter={(v) => compactFmt.format(Number(v))} />
-            <Tooltip content={<ChartTooltip />} cursor={{ fill: GRID, fillOpacity: 0.3 }} />
+            <Tooltip content={<ChartTooltip numberFmt={numberFmt} />} cursor={{ fill: GRID, fillOpacity: 0.3 }} />
             <Bar dataKey={spec.yKey} fill={ACCENT} radius={[3, 3, 0, 0]} />
           </BarChart>
         ))}

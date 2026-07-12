@@ -32,6 +32,7 @@ export function cacheKey(request: SqlRequest): string {
   const basis = JSON.stringify({
     q: normalizeQuestion(request.question),
     tables: request.tables,
+    lang: request.lang ?? "es",
   });
   return createHash("sha256").update(basis).digest("hex");
 }

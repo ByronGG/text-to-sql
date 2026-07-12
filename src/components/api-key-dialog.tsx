@@ -17,12 +17,14 @@ import {
   getStoredApiKey,
   setStoredApiKey,
 } from "@/lib/api-key";
+import { useT } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
 
 export function ApiKeyDialog() {
   const [open, setOpen] = useState(false);
   const [hasKey, setHasKey] = useState(false);
   const [value, setValue] = useState("");
+  const t = useT();
 
   // localStorage is client-only; read it after mount so the initial render
   // matches the server (no "active" indicator until hydrated).
@@ -55,14 +57,14 @@ export function ApiKeyDialog() {
         className="inline-flex items-center gap-1.5 text-xs text-muted-foreground transition-colors hover:text-foreground"
       >
         <KeyRound className="size-3.5" />
-        <span>API key</span>
+        <span>{t.apiKey.apiKey}</span>
         {hasKey && (
           <span
             className="inline-flex items-center gap-1 text-primary"
-            title="Estás usando tu propia API key"
+            title={t.apiKey.activeTitle}
           >
             <Check className="size-3" />
-            <span>activa</span>
+            <span>{t.apiKey.active}</span>
           </span>
         )}
       </button>
@@ -76,48 +78,32 @@ export function ApiKeyDialog() {
       >
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Tu propia API key de Groq</DialogTitle>
-            <DialogDescription>
-              Opcional. Con tu propia key las consultas usan tu cuota de Groq y no el
-              límite compartido de la demo. Se guarda solo en este navegador y se envía
-              a nuestro proxy únicamente para llamar a Groq; no la almacenamos en el
-              servidor.
-            </DialogDescription>
+            <DialogTitle>{t.apiKey.dialogTitle}</DialogTitle>
+            <DialogDescription>{t.apiKey.description}</DialogDescription>
           </DialogHeader>
 
           <div className="space-y-2">
             <Input
               type="password"
               autoComplete="off"
-              placeholder={hasKey ? "•••••••• (hay una key guardada)" : "gsk_…"}
+              placeholder={hasKey ? t.apiKey.placeholderHasKey : t.apiKey.placeholderNew}
               value={value}
               onChange={(e) => setValue(e.target.value)}
               onKeyDown={(e) => {
                 if (e.key === "Enter") save();
               }}
             />
-            <p className="text-xs text-muted-foreground">
-              Consíguela gratis en{" "}
-              <a
-                href="https://console.groq.com/keys"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-primary underline-offset-4 hover:underline"
-              >
-                console.groq.com/keys
-              </a>
-              .
-            </p>
+            <p className="text-xs text-muted-foreground">{t.apiKey.hint}</p>
           </div>
 
           <DialogFooter className={cn(hasKey && "sm:justify-between")}>
             {hasKey && (
               <Button type="button" variant="ghost" onClick={remove}>
-                Quitar key
+                {t.apiKey.removeKey}
               </Button>
             )}
             <Button type="button" onClick={save} disabled={!value.trim()}>
-              Guardar
+              {t.apiKey.save}
             </Button>
           </DialogFooter>
         </DialogContent>

@@ -20,11 +20,18 @@ const ChatMessageSchema = z.object({
   content: z.string(),
 });
 
+// UI language: controls the language of the model's natural-language output
+// (interpretation, clarifications, suggestions, explanations). The JSON keys
+// of the response stay the same regardless. Optional, defaults to Spanish.
+export const LangSchema = z.enum(["es", "en"]);
+export type Lang = z.infer<typeof LangSchema>;
+
 export const SqlRequestSchema = z.object({
   question: z.string().min(1).max(2000),
   // One or more loaded tables. Multiple tables enable cross-table joins.
   tables: TablesInput,
   history: z.array(ChatMessageSchema).max(20).optional(),
+  lang: LangSchema.optional(),
   failedSql: z
     .object({
       sql: z.string(),
@@ -36,7 +43,7 @@ export const SqlRequestSchema = z.object({
 export type SqlRequest = z.infer<typeof SqlRequestSchema>;
 
 // Suggested-questions endpoint: schema in, a few natural-language questions out.
-export const SuggestRequestSchema = z.object({ tables: TablesInput });
+export const SuggestRequestSchema = z.object({ tables: TablesInput, lang: LangSchema.optional() });
 export const SuggestResponseSchema = z.object({
   preguntas: z.array(z.string().min(1)).min(1).max(6),
 });
@@ -45,6 +52,7 @@ export const SuggestResponseSchema = z.object({
 export const ExplainRequestSchema = z.object({
   sql: z.string().min(1).max(10_000),
   tables: TablesInput,
+  lang: LangSchema.optional(),
 });
 export const ExplainResponseSchema = z.object({ explicacion: z.string().min(1) });
 
