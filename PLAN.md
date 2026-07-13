@@ -329,19 +329,20 @@ y la sensación de exploración guiada (seguimientos).
 Pendientes reales en orden de prioridad. El primero es un bug de contexto conocido; el
 resto es el backlog que ya venía anotado.
 
-- [ ] **Paso 1 · Preguntas sugeridas con contexto multi-archivo** — con **un solo
-  archivo** las sugerencias ("Prueba con") son correctas, pero al **agregar más archivos**
-  los chips no se regeneran contemplando el nuevo esquema: siguen reflejando solo el
-  primer archivo (y nunca proponen una pregunta que combine tablas con JOIN). Causa: en
-  `query-console.tsx` el efecto que llama a `fetchSuggestions(tables, lang)` depende solo
-  de `[lang]` (con `eslint-disable exhaustive-deps`), así que no se re-dispara cuando
-  cambia `tables`; y la consola se monta con `key={mode}` (no por conjunto de tablas),
-  por lo que agregar un archivo tampoco la remonta. Arreglo propuesto: añadir una **firma
-  de las tablas** (p. ej. `tablesSignature(allowedTableNames)`) a las dependencias del
-  efecto para re-obtener sugerencias cuando cambie el conjunto de tablas. `/api/suggest`
-  ya recibe todas las tablas y cachea por hash del esquema, así que el backend no necesita
-  cambios. Verificar en navegador con 2+ archivos que las sugerencias incluyan al menos
-  una pregunta que cruce tablas.
+- [x] **Paso 1 · Preguntas sugeridas con contexto multi-archivo** — con **un solo
+  archivo** las sugerencias ("Prueba con") eran correctas, pero al **agregar más archivos**
+  los chips no se regeneraban contemplando el nuevo esquema: seguían reflejando solo el
+  primer archivo (y nunca proponían una pregunta con JOIN). Causa: en `query-console.tsx`
+  el efecto que llama a `fetchSuggestions(tables, lang)` dependía solo de `[lang]`, así que
+  no se re-disparaba cuando cambiaba `tables` (la consola se monta con `key={mode}`, no por
+  conjunto de tablas, por lo que agregar un archivo tampoco la remonta). Arreglo: se añadió
+  `persistSig` (la firma `tablesSignature(allowedTableNames)` que ya existía para
+  persistencia) a las dependencias del efecto → re-obtiene sugerencias al cambiar el
+  conjunto de tablas. `/api/suggest` ya recibía todas las tablas y cachea por hash del
+  esquema, sin cambios en backend. Verificado en navegador con 2 archivos (`ventas` +
+  `metas` con `vendedor` compartido): al soltar el 2º archivo se dispara una nueva llamada
+  a `/api/suggest` y las sugerencias se regeneran incluyendo una pregunta que cruza ambas
+  tablas ("ranking de vendedores por antigüedad y logro de metas").
 - [ ] **Paso 2 · Infra compartida (si hay tráfico real)** — mover rate limit y cache a
   Upstash Redis para que sobrevivan cold starts y se compartan entre instancias
   serverless (hoy son por-instancia, documentado como limitación consciente). Es el

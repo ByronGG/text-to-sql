@@ -260,16 +260,19 @@ export function QueryConsole({
   }, []);
 
   // Fetches suggested questions (unless a shared question is auto-running), and
-  // re-fetches when the language changes so the chips match the UI language.
-  // The setState happens after an await, so it's not the synchronous
-  // set-state-in-effect the lint warns about.
+  // re-fetches when the language changes (so the chips match the UI language) or
+  // when the set of loaded tables changes (adding/removing a file must refresh
+  // the suggestions to consider the new schema, including cross-table joins).
+  // `persistSig` is a stable signature of the loaded table names. The setState
+  // happens after an await, so it's not the synchronous set-state-in-effect the
+  // lint warns about.
   useEffect(() => {
     if (autoRun) return;
     fetchSuggestions(tables, lang)
       .then(setSuggestions)
       .catch(() => {});
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [lang]);
+  }, [lang, persistSig]);
 
   // Fetches refining follow-up chips for the active turn (from its question +
   // SQL), and refetches when the turn or language changes. The setState happens
