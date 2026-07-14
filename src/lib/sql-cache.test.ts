@@ -61,36 +61,39 @@ describe("cacheKey", () => {
   });
 });
 
+// getCached/setCached are async (Redis-backed when configured); with no Redis
+// env vars in the test run they use the per-instance in-memory LRU, whose
+// eviction semantics these tests pin.
 describe("cache storage", () => {
-  it("returns undefined on a miss and the value on a hit", () => {
+  it("returns undefined on a miss and the value on a hit", async () => {
     const key = `miss-${Math.random()}`;
-    expect(getCached(key)).toBeUndefined();
-    setCached(key, answer("SELECT 1"));
-    expect(getCached(key)).toEqual(answer("SELECT 1"));
+    expect(await getCached(key)).toBeUndefined();
+    await setCached(key, answer("SELECT 1"));
+    expect(await getCached(key)).toEqual(answer("SELECT 1"));
   });
 
   // Inserting 600 entries into a 500-cap cache leaves exactly the last 500,
   // regardless of whatever the earlier tests left behind (any older entries are
   // evicted first, being the oldest). That makes these assertions independent
   // of test order despite the cache being module-level state.
-  it("caps the cache, evicting oldest-first", () => {
+  it("caps the cache, evicting oldest-first", async () => {
     const p = `lru-${Math.random()}-`;
-    for (let i = 0; i < 600; i++) setCached(`${p}${i}`, answer(`SELECT ${i}`));
+    for (let i = 0; i < 600; i++) await setCached(`${p}${i}`, answer(`SELECT ${i}`));
 
-    expect(getCached(`${p}99`)).toBeUndefined(); // evicted
-    expect(getCached(`${p}599`)).toBeDefined(); // newest, kept
+    expect(await getCached(`${p}99`)).toBeUndefined(); // evicted
+    expect(await getCached(`${p}599`)).toBeDefined(); // newest, kept
   });
 
-  it("treats a read as a use, sparing the entry from eviction", () => {
+  it("treats a read as a use, sparing the entry from eviction", async () => {
     const p = `mru-${Math.random()}-`;
-    for (let i = 0; i < 600; i++) setCached(`${p}${i}`, answer(`SELECT ${i}`));
+    for (let i = 0; i < 600; i++) await setCached(`${p}${i}`, answer(`SELECT ${i}`));
 
     // Cache now holds p100..p599. Touch the oldest survivor…
-    expect(getCached(`${p}100`)).toBeDefined();
+    expect(await getCached(`${p}100`)).toBeDefined();
     // …then push one more in, forcing exactly one eviction.
-    setCached(`${p}new`, answer("SELECT new"));
+    await setCached(`${p}new`, answer("SELECT new"));
 
-    expect(getCached(`${p}100`)).toBeDefined(); // survived: it was just read
-    expect(getCached(`${p}101`)).toBeUndefined(); // evicted: now the oldest
+    expect(await getCached(`${p}100`)).toBeDefined(); // survived: it was just read
+    expect(await getCached(`${p}101`)).toBeUndefined(); // evicted: now the oldest
   });
 });

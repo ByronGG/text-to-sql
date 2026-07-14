@@ -15,11 +15,11 @@ export async function POST(request: Request) {
   // consume the rate limit nor require a key.
   const key = isCacheable(parsed.data) ? cacheKey(parsed.data) : undefined;
   if (key) {
-    const cached = getCached(key);
+    const cached = await getCached(key);
     if (cached) return NextResponse.json(cached, { headers: { "x-cache": "HIT" } });
   }
 
-  const access = resolveGroqAccess(request);
+  const access = await resolveGroqAccess(request);
   if (access instanceof NextResponse) return access;
 
   const result = await callGroq(buildMessages(parsed.data), access.apiKey);
@@ -43,6 +43,6 @@ export async function POST(request: Request) {
     );
   }
 
-  if (key) setCached(key, llmParsed.data);
+  if (key) await setCached(key, llmParsed.data);
   return NextResponse.json(llmParsed.data, { headers: { "x-cache": "MISS" } });
 }

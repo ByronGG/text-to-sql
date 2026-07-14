@@ -35,12 +35,12 @@ export interface GroqAccess {
  * user-supplied key (BYOK) bypasses the limit since it spends their own quota.
  * Returns a NextResponse to short-circuit on 429 / missing key.
  */
-export function resolveGroqAccess(request: Request): GroqAccess | NextResponse {
+export async function resolveGroqAccess(request: Request): Promise<GroqAccess | NextResponse> {
   const clientKey = request.headers.get(GROQ_KEY_HEADER)?.trim() || undefined;
 
   if (!clientKey) {
     const ip = request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? "unknown";
-    const rate = checkRateLimit(ip);
+    const rate = await checkRateLimit(ip);
     if (!rate.allowed) {
       return NextResponse.json(
         { error: "Demasiadas solicitudes. Intenta de nuevo en unos minutos o usa tu propia API key." },

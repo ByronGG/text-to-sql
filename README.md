@@ -137,6 +137,15 @@ Crea `.env.local` con tu API key de [Groq](https://console.groq.com/keys):
 GROQ_API_KEY=gsk_tu_key_aqui
 ```
 
+Opcional — para que el rate limit y los caches se compartan entre instancias y
+sobrevivan cold starts, agrega una instancia de [Upstash Redis](https://upstash.com)
+(si no defines estas variables, se usa memoria por-instancia sin más):
+
+```
+UPSTASH_REDIS_REST_URL=https://tu-instancia.upstash.io
+UPSTASH_REDIS_REST_TOKEN=tu_token
+```
+
 ```bash
 npm run dev      # http://localhost:3000
 npm test         # tests unitarios (Vitest)
@@ -151,10 +160,13 @@ desde la UI (BYOK) para no depender del límite compartido.
 
 ## Decisiones y limitaciones conocidas
 
-- **Rate limit y caches en memoria**: son por-instancia y se reinician en cada cold
-  start; no se comparten entre instancias serverless. Simplificación intencional para un
-  demo de bajo tráfico — en producción se respaldarían con Upstash Redis. (BYOK evita el
-  límite por completo.)
+- **Rate limit y caches: en memoria por defecto, Redis opcional**: sin configurar son
+  por-instancia y se reinician en cada cold start (simplificación intencional para un demo
+  de bajo tráfico). Si defines `UPSTASH_REDIS_REST_URL`/`UPSTASH_REDIS_REST_TOKEN`, el rate
+  limit y los caches (SQL, sugerencias, seguimientos, explicaciones) pasan a **Upstash
+  Redis** — compartidos entre instancias serverless y persistentes entre cold starts. La
+  detección es automática (`src/lib/redis.ts`); sin las variables, cae al camino en memoria
+  sin cambios de comportamiento. (BYOK evita el límite por completo.)
 - **Timeout de consultas (DuckDB) no cancela la ejecución en curso**: DuckDB-WASM no
   expone cancelación real para `query()`; el timeout solo deja de esperar. Aceptable para
   un usuario único sobre su propio archivo.

@@ -269,7 +269,8 @@ demostrable por sí solo.
   instancias; hoy son por-instancia y está documentado como limitación consciente.
   **Diferido a propósito:** es infraestructura sin beneficio visible sin tráfico real;
   no vale la pena para un portafolio hoy. Se retoma solo si el demo empieza a recibir uso.
-  (Se sigue rastreando en **v6 · paso 2**.)
+  (**Resuelto en v6 · paso 2**: rate limit + caches ahora usan Upstash Redis si se
+  configuran las variables de entorno, con fallback en memoria.)
 
 > **v4 cerrada** (pasos 1–5 completos; el 6 queda condicional). La app vive en
 > **askql.vercel.app**; README actualizado a v1–v4. Total de tests: **89**.
@@ -343,10 +344,17 @@ resto es el backlog que ya venía anotado.
   `metas` con `vendedor` compartido): al soltar el 2º archivo se dispara una nueva llamada
   a `/api/suggest` y las sugerencias se regeneran incluyendo una pregunta que cruza ambas
   tablas ("ranking de vendedores por antigüedad y logro de metas").
-- [ ] **Paso 2 · Infra compartida (si hay tráfico real)** — mover rate limit y cache a
-  Upstash Redis para que sobrevivan cold starts y se compartan entre instancias
-  serverless (hoy son por-instancia, documentado como limitación consciente). Es el
-  antiguo v4 · paso 6: diferido a propósito, se retoma solo si el demo recibe uso real.
+- [x] **Paso 2 · Infra compartida (rate limit + caches en Redis, opt-in)** — el rate limit
+  y los cuatro caches (SQL, sugerencias, seguimientos, explicaciones) pasan a **Upstash
+  Redis** cuando `UPSTASH_REDIS_REST_URL`/`TOKEN` están definidos, y caen al camino en
+  memoria si no (detección automática en `src/lib/redis.ts`; el resto de la app no cambia).
+  Piezas nuevas: `redis.ts` (cliente memoizado o `null`), `kv-cache.ts` (`createCache` async
+  con backend Redis-o-LRU y TTL de 1 día); `rate-limit.ts` reescrito async (INCR+EXPIRE en
+  Redis, o bucket en memoria). `resolveGroqAccess` y los caches se volvieron async → `await`
+  en las 4 rutas LLM; `sql-cache` conserva sus funciones puras (clave/cacheable) y delega el
+  almacenamiento. Tests de caché migrados a async (89/89 verdes). **Verificado el fallback
+  en memoria end-to-end** (MISS→HIT en `/api/suggest`, UI OK); el camino Redis quedó
+  implementado pero **sin verificar** (requiere credenciales Upstash + variables en Vercel).
 
 ### Backlog (ideas sueltas, si sobra tiempo)
 - Streaming de la respuesta del LLM (mejora percepción de velocidad; el JSON

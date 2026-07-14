@@ -1,12 +1,13 @@
 import { NextResponse } from "next/server";
 import { callGroq, extractJson, groqErrorResponse, hashObject, resolveGroqAccess } from "@/lib/api-groq";
+import { createCache } from "@/lib/kv-cache";
 import { SuggestRequestSchema, SuggestResponseSchema } from "@/lib/llm-schema";
 import { buildSuggestMessages } from "@/lib/sql-prompt";
 
 // Suggestions depend only on the schema, so many users on the same dataset (the
-// bundled samples especially) share one generation. Small in-memory cache.
-const cache = new Map<string, string[]>();
-const MAX_ENTRIES = 200;
+// bundled samples especially) share one generation. Redis-backed when
+// configured, else a per-instance in-memory LRU.
+const cache = createCache<string[]>("suggest", { maxEntries: 200, ttlSeconds: 60 * 60 * 24 });
 
 export async function POST(request: Request) {
   const body = await request.json().catch(() => null);
@@ -17,10 +18,10 @@ export async function POST(request: Request) {
 
   const lang = parsed.data.lang ?? "es";
   const key = hashObject({ tables: parsed.data.tables, lang });
-  const cached = cache.get(key);
+  const cached = await cache.get(key);
   if (cached) return NextResponse.json({ preguntas: cached }, { headers: { "x-cache": "HIT" } });
 
-  const access = resolveGroqAccess(request);
+  const access = await resolveGroqAccess(request);
   if (access instanceof NextResponse) return access;
 
   const result = await callGroq(buildSuggestMessages(parsed.data.tables, lang), access.apiKey);
@@ -38,7 +39,6 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "El modelo respondió en un formato inesperado." }, { status: 502 });
   }
 
-  cache.set(key, p.data.preguntas);
-  if (cache.size > MAX_ENTRIES) cache.delete(cache.keys().next().value!);
+  await cache.set(key, p.data.preguntas);
   return NextResponse.json({ preguntas: p.data.preguntas }, { headers: { "x-cache": "MISS" } });
 }
