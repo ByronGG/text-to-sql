@@ -7,7 +7,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { loadCsvAsTable, loadSampleTable, type TableSchema } from "@/lib/csv-table";
 import { useT } from "@/lib/i18n";
 import { deriveTableName } from "@/lib/table-name";
-import { isExcelFile, parseWorkbook, sheetToCsvFile, stripExtension } from "@/lib/xlsx-input";
+import { isExcelFile, parseWorkbook, sheetToCsv, sheetToCsvFile, stripExtension } from "@/lib/xlsx-input";
 
 interface CsvUploadProps {
   /** `file` is the exact CSV registered in DuckDB — the caller persists its
@@ -66,6 +66,41 @@ export function CsvUpload({ onLoaded, existingTableNames = [] }: CsvUploadProps)
       await loadCsvFile(csvFile, label);
     },
     [loadCsvFile],
+  );
+
+  // Loads every sheet of the workbook at once, each as its own table (so they
+  // can be joined). Empty sheets are skipped. Names are deduped within the batch
+  // because `existingTableNames` (a prop) doesn't reflect the tables we add
+  // mid-loop.
+  const loadAllSheets = useCallback(
+    async (choice: SheetChoice) => {
+      setSheetChoice(null);
+      setIsLoading(true);
+      setError(null);
+      try {
+        const usedNames = [...existingTableNames];
+        let loaded = 0;
+        for (const sheetName of choice.sheetNames) {
+          const csv = sheetToCsv(choice.workbook, sheetName);
+          if (!csv.trim()) continue; // skip empty sheets
+          const label = `${choice.displayName} · ${sheetName}`;
+          const file = new File([csv], `${choice.baseName}-${sheetName}.csv`, { type: "text/csv" });
+          const tableName = deriveTableName(label, usedNames);
+          usedNames.push(tableName);
+          const schema = await loadCsvAsTable(file, tableName);
+          onLoaded(schema, label, file);
+          loaded++;
+        }
+        if (loaded === 0) setError(t.upload.errorAllEmpty);
+      } catch (err) {
+        setError(
+          err instanceof Error ? t.upload.errorProcess(err.message) : t.upload.errorProcessGeneric,
+        );
+      } finally {
+        setIsLoading(false);
+      }
+    },
+    [existingTableNames, onLoaded, t],
   );
 
   const handleFile = useCallback(
@@ -145,6 +180,13 @@ export function CsvUpload({ onLoaded, existingTableNames = [] }: CsvUploadProps)
                 </Button>
               ))}
             </div>
+            <Button
+              type="button"
+              disabled={isLoading}
+              onClick={() => void loadAllSheets(sheetChoice)}
+            >
+              {t.upload.loadAllSheets(sheetChoice.sheetNames.length)}
+            </Button>
             <button
               type="button"
               onClick={() => setSheetChoice(null)}

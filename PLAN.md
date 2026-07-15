@@ -355,10 +355,24 @@ resto es el backlog que ya venía anotado.
   almacenamiento. Tests de caché migrados a async (89/89 verdes). **Verificado el fallback
   en memoria end-to-end** (MISS→HIT en `/api/suggest`, UI OK); el camino Redis quedó
   implementado pero **sin verificar** (requiere credenciales Upstash + variables en Vercel).
+- [x] **Paso 3 · Cargar todas las hojas de un Excel de golpe** — al soltar un `.xlsx` con
+  varias hojas, el selector ahora ofrece "Cargar las N hojas" además de elegir una sola.
+  Carga cada hoja como su propia tabla (nombre saneado y deduplicado **dentro del lote**,
+  porque el prop `existingTableNames` no refleja las que se agregan en el mismo loop),
+  saltando las hojas vacías. Piezas: `sheetToCsv` extraído en `xlsx-input.ts` (para detectar
+  hojas sin datos) y `loadAllSheets` en `csv-upload.tsx`. Verificado en navegador con un
+  libro de 4 hojas (ventas·clientes·productos + una vacía): se cargaron 3 tablas (la vacía
+  se saltó), las sugerencias se regeneraron con contexto multi-tabla, y una consulta que une
+  dos hojas (ventas ⋈ clientes → monto por ciudad) devolvió los valores correctos.
+
+> **v6 cerrada** (3/3 pasos): bug de sugerencias multi-archivo corregido, infra opcional en
+> Redis con fallback en memoria, y carga de todas las hojas de un Excel. Los tres se
+> verificaron en navegador; la suite de tests se mantiene en **89** (las piezas nuevas son
+> UI/rutas/prompts, cubiertas por typecheck + verificación end-to-end). Queda solo el
+> backlog de ideas sueltas de abajo.
 
 ### Backlog (ideas sueltas, si sobra tiempo)
 - Streaming de la respuesta del LLM (mejora percepción de velocidad; el JSON
   estructurado lo complica).
 - Entrada Parquet (DuckDB lo lee nativo; solo falta el camino de carga).
-- Cargar todas las hojas de un Excel de golpe (hoy se elige una hoja por carga).
 - Verificación end-to-end del modo Postgres contra una DB real sembrada (Docker).

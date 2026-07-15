@@ -33,8 +33,9 @@ Hay dos modos de datos:
 
 - **Pregunta en lenguaje natural → SQL → resultado**, con interpretación en texto y el
   SQL generado colapsable y resaltado.
-- **Múltiples archivos con JOINs** — carga varias tablas; el prompt detecta columnas
-  homónimas como posibles llaves de join.
+- **Múltiples archivos con JOINs** — carga varias tablas (o todas las hojas de un Excel
+  de una vez, cada una como su propia tabla); el prompt detecta columnas homónimas como
+  posibles llaves de join.
 - **Gráfica automática** — heurística por los valores del resultado (línea para series
   temporales, barras para categóricas, tarjetas para métricas únicas).
 - **Historial conversacional** — preguntas de seguimiento que se apoyan en las

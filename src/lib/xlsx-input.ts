@@ -25,13 +25,16 @@ export async function parseWorkbook(file: File): Promise<ParsedWorkbook> {
   return { workbook, sheetNames: workbook.SheetNames };
 }
 
-/** Serializes one sheet to a CSV File that can be fed to `loadCsvAsTable`. */
+/** Serializes one sheet to CSV text (blank rows dropped); empty when the sheet has no data. */
+export function sheetToCsv(workbook: XLSX.WorkBook, sheetName: string): string {
+  return XLSX.utils.sheet_to_csv(workbook.Sheets[sheetName], { blankrows: false });
+}
+
+/** Wraps `sheetToCsv` in a CSV File that can be fed to `loadCsvAsTable`. */
 export function sheetToCsvFile(
   workbook: XLSX.WorkBook,
   sheetName: string,
   baseName: string,
 ): File {
-  const sheet = workbook.Sheets[sheetName];
-  const csv = XLSX.utils.sheet_to_csv(sheet, { blankrows: false });
-  return new File([csv], `${baseName}.csv`, { type: "text/csv" });
+  return new File([sheetToCsv(workbook, sheetName)], `${baseName}.csv`, { type: "text/csv" });
 }
